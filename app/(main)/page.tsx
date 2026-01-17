@@ -13,17 +13,12 @@ const HowItWorksSection = dynamic(() => import('./_components/HowItWorksSection'
     ssr: true,
 });
 
-const CTASection = dynamic(() => import('./_components/CTASection'), {
-    ssr: true,
-});
-
 export default function HomePage() {
     return (
         <>
             <HeroSection />
             <FeaturesSection />
             <HowItWorksSection />
-            <CTASection />
         </>
     );
 }

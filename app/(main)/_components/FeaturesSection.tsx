@@ -75,14 +75,13 @@ export default function FeaturesSection() {
                         <svg className="w-5 h-5 text-[var(--color-primary-500)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        <span className="text-sm font-medium text-[var(--color-primary-500)]">Tính năng mạnh mẽ</span>
+                        <span className="text-sm font-medium text-[var(--color-primary-500)]">Công cụ</span>
                     </div>
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--foreground)] mb-4">
-                        Mọi thứ bạn cần cho{' '}
-                        <span className="gradient-text">Content Marketing</span>
+                        Chọn công cụ bạn cần
                     </h2>
                     <p className="text-lg text-[var(--foreground-muted)] max-w-2xl mx-auto">
-                        Bộ công cụ AI toàn diện giúp bạn tạo nội dung chất lượng, tiết kiệm thời gian và tăng hiệu quả marketing.
+                        4 công cụ AI hỗ trợ tạo nội dung marketing.
                     </p>
                 </div>
 

@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import Button from '@/components/ui/Button';
 
 const navItems = [
     { label: 'Trang chủ', href: '/' },
-    { label: 'Tính năng', href: '#features' },
-    { label: 'Bảng giá', href: '#pricing' },
-    { label: 'Liên hệ', href: '#contact' },
+    { label: 'Công cụ', href: '#features' },
 ];
 
 export default function Header() {
@@ -31,25 +29,24 @@ export default function Header() {
                 'fixed top-0 left-0 right-0 z-50',
                 'transition-all duration-300',
                 isScrolled
-                    ? 'bg-[var(--background)]/80 backdrop-blur-xl border-b border-[var(--border)]'
-                    : 'bg-transparent'
+                    ? 'bg-white/95 backdrop-blur-xl shadow-sm border-b border-gray-100'
+                    : 'bg-white/80 backdrop-blur-md'
             )}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-[var(--header-height)]">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <div className="relative">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-secondary-600)] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)] group-hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-shadow duration-300">
-                                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                            </div>
-                            <div className="absolute -inset-1 bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-secondary-600)] rounded-xl blur opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+                    {/* Logo with brand gradient background */}
+                    <Link href="/" className="flex items-center">
+                        <div className="bg-gradient-to-r from-[#F59E0B] to-[#EA580C] rounded-lg px-3 py-1.5 shadow-md">
+                            <Image
+                                src="/logo/logo.png"
+                                alt="Easy Marketing"
+                                width={150}
+                                height={32}
+                                className="h-7 w-auto"
+                                priority
+                            />
                         </div>
-                        <span className="text-xl font-bold text-[var(--foreground)]">
-                            AI<span className="gradient-text">Content</span>
-                        </span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -58,33 +55,25 @@ export default function Header() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className="text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors duration-200 text-sm font-medium"
+                                className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm font-medium"
                             >
                                 {item.label}
                             </Link>
                         ))}
                     </nav>
 
-                    {/* Desktop CTA Buttons */}
-                    <div className="hidden md:flex items-center gap-3">
+                    {/* Desktop CTA Button - Orange/Amber gradient */}
+                    <div className="hidden md:flex items-center">
                         <Link href="/login">
-                            <Button variant="ghost" size="sm">
+                            <button className="inline-flex items-center justify-center gap-2 px-6 h-10 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-semibold text-sm hover:from-[#FBBF24] hover:to-[#F97316] transition-all shadow-md hover:shadow-lg">
                                 Đăng nhập
-                            </Button>
-                        </Link>
-                        <Link href="/login">
-                            <Button variant="primary" size="sm">
-                                Bắt đầu ngay
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
-                            </Button>
+                            </button>
                         </Link>
                     </div>
 
                     {/* Mobile Menu Button */}
                     <button
-                        className="md:hidden p-2 rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors"
+                        className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         aria-label="Toggle menu"
                     >
@@ -106,8 +95,8 @@ export default function Header() {
                 className={cn(
                     'md:hidden',
                     'absolute top-full left-0 right-0',
-                    'bg-[var(--background)]/95 backdrop-blur-xl',
-                    'border-b border-[var(--border)]',
+                    'bg-white/95 backdrop-blur-xl',
+                    'border-b border-gray-100 shadow-lg',
                     'transition-all duration-300 ease-out',
                     isMobileMenuOpen
                         ? 'opacity-100 translate-y-0'
@@ -119,22 +108,17 @@ export default function Header() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="block text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors text-lg font-medium"
+                            className="block text-gray-600 hover:text-gray-900 transition-colors text-lg font-medium"
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
                             {item.label}
                         </Link>
                     ))}
-                    <div className="pt-4 border-t border-[var(--border)] space-y-3">
+                    <div className="pt-4 border-t border-gray-100">
                         <Link href="/login" className="block">
-                            <Button variant="outline" size="md" className="w-full">
+                            <button className="w-full inline-flex items-center justify-center gap-2 px-6 h-11 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-semibold hover:from-[#FBBF24] hover:to-[#F97316] transition-all shadow-md">
                                 Đăng nhập
-                            </Button>
-                        </Link>
-                        <Link href="/login" className="block">
-                            <Button variant="primary" size="md" className="w-full">
-                                Bắt đầu ngay
-                            </Button>
+                            </button>
                         </Link>
                     </div>
                 </nav>

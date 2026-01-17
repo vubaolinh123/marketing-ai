@@ -22,12 +22,12 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         border border-[var(--border)]
       `,
             glass: `
-        bg-[var(--background-card)]/60
+        bg-[var(--background-card)]/80
         backdrop-blur-xl
-        border border-white/10
+        border border-[var(--border)]
       `,
             gradient: `
-        bg-gradient-to-br from-[var(--background-card)] to-[var(--color-gray-900)]
+        bg-gradient-to-br from-[var(--background-card)] to-[var(--background-secondary)]
         border border-[var(--border)]
       `,
             outline: `

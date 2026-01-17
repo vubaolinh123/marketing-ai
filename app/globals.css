@@ -43,29 +43,29 @@
   --color-gray-900: #18181B;
   --color-gray-950: #09090B;
   
-  /* ===== Semantic Colors ===== */
-  --background: #09090B;
-  --background-secondary: #18181B;
-  --background-card: #1C1C1E;
-  --foreground: #FAFAFA;
-  --foreground-muted: #A1A1AA;
-  --border: #27272A;
-  --border-hover: #3F3F46;
+  /* ===== Semantic Colors - Light Theme ===== */
+  --background: #FAFAFA;
+  --background-secondary: #F4F4F5;
+  --background-card: #FFFFFF;
+  --foreground: #18181B;
+  --foreground-muted: #71717A;
+  --border: #E4E4E7;
+  --border-hover: #D4D4D8;
   
   /* ===== Gradients ===== */
   --gradient-primary: linear-gradient(135deg, #F59E0B 0%, #EA580C 100%);
   --gradient-primary-hover: linear-gradient(135deg, #FBBF24 0%, #F97316 100%);
-  --gradient-hero: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
-  --gradient-glow: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.15) 0%, transparent 50%);
-  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  --gradient-hero: linear-gradient(180deg, rgba(245, 158, 11, 0.06) 0%, transparent 50%);
+  --gradient-glow: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.1) 0%, transparent 50%);
+  --gradient-card: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
   
-  /* ===== Shadows ===== */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 40px rgba(245, 158, 11, 0.3);
-  --shadow-glow-lg: 0 0 80px rgba(245, 158, 11, 0.4);
+  /* ===== Shadows - Light Theme ===== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 40px rgba(245, 158, 11, 0.2);
+  --shadow-glow-lg: 0 0 80px rgba(245, 158, 11, 0.25);
   
   /* ===== Typography ===== */
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
@@ -133,12 +133,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-gray-700);
+  background: var(--color-gray-300);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gray-600);
+  background: var(--color-gray-400);
 }
 
 /* ===== Focus Styles ===== */
@@ -182,10 +182,10 @@ a {
 }
 
 .glass {
-  background: rgba(28, 28, 30, 0.8);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .glow {

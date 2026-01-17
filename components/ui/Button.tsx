@@ -48,7 +48,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         bg-[var(--background-card)]
         text-[var(--foreground)]
         border border-[var(--border)]
-        hover:bg-[var(--color-gray-800)]
+        hover:bg-[var(--background-secondary)]
         hover:border-[var(--border-hover)]
         focus-visible:ring-[var(--color-gray-500)]
       `,
@@ -63,7 +63,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         bg-transparent
         text-[var(--foreground-muted)]
         hover:text-[var(--foreground)]
-        hover:bg-white/5
+        hover:bg-[var(--foreground)]/5
         focus-visible:ring-[var(--color-gray-500)]
       `,
         };

@@ -28,9 +28,10 @@ const FAKE_CREDENTIALS = {
 const FAKE_USER: User = {
     id: '1',
     username: 'admin',
-    email: 'admin@aicontent.vn',
-    companyName: 'AI Content Generator',
+    email: 'admin@easymarketing.vn',
+    companyName: 'Easy Marketing',
     customPrompt: 'Bạn là trợ lý AI chuyên nghiệp trong lĩnh vực marketing...',
+    isAdmin: true,
     createdAt: new Date(),
 };
 

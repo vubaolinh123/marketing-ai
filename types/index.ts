@@ -4,6 +4,7 @@ export interface User {
     email: string;
     companyName?: string;
     customPrompt?: string;
+    isAdmin: boolean;
     createdAt: Date;
 }
 
