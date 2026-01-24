@@ -27,15 +27,10 @@ export const fakeIdeaSummaries = [
 ];
 
 export interface VideoScriptInput {
-    customerName: string;
     duration: string;
     size: string;
     title: string;
-    logoFile: File | null;
-    logoName: string;
-    sourceTotal: string;
     hasVoiceOver: boolean;
-    hasSub: boolean;
     otherRequirements: string;
     ideaMode: 'manual' | 'ai';
     customIdea: string;

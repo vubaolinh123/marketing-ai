@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { durationOptions, sizeOptions, fakeIdeaSummaries, type VideoScriptInput } from '@/lib/fakeData';
 import { Button } from '@/components/ui';
@@ -13,32 +13,15 @@ interface VideoScriptFormProps {
 
 export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptFormProps) {
     const [formData, setFormData] = useState<VideoScriptInput>({
-        customerName: '',
         duration: '',
         size: '',
         title: '',
-        logoFile: null,
-        logoName: '',
-        sourceTotal: '',
         hasVoiceOver: true,
-        hasSub: true,
         otherRequirements: '',
         ideaMode: 'ai',
         customIdea: '',
     });
-    const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [generatingIdea, setGeneratingIdea] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleLogoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFormData(prev => ({ ...prev, logoFile: file }));
-            const reader = new FileReader();
-            reader.onload = () => setLogoPreview(reader.result as string);
-            reader.readAsDataURL(file);
-        }
-    }, []);
 
     const handleGenerateIdea = useCallback(async () => {
         setGeneratingIdea(true);
@@ -50,12 +33,12 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (formData.customerName && formData.title) {
+        if (formData.title) {
             onSubmit(formData);
         }
     };
 
-    const isValid = formData.customerName.trim() && formData.title.trim();
+    const isValid = formData.title.trim();
 
     return (
         <motion.form
@@ -64,21 +47,8 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
             onSubmit={handleSubmit}
             className="space-y-6"
         >
-            {/* Row 1: Customer Name + Duration + Size */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tên khách hàng <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.customerName}
-                        onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                        placeholder="VD: M-Steakhouse"
-                        disabled={isLoading}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
-                    />
-                </div>
+            {/* Row 1: Duration + Size */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Thời lượng dự kiến
@@ -236,111 +206,30 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
                 </AnimatePresence>
             </div>
 
-            {/* Row 4: Logo Upload + Logo Name */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Logo
-                    </label>
-                    <div className="flex items-center gap-4">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleLogoChange}
-                            className="hidden"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isLoading}
-                            className="flex-1 px-4 py-3 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#F59E0B] text-gray-500 hover:text-[#F59E0B] transition-all flex items-center justify-center gap-2"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            Upload Logo
-                        </button>
-                        {logoPreview && (
-                            <img src={logoPreview} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border" />
-                        )}
-                    </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tên Logo hiển thị
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.logoName}
-                        onChange={(e) => setFormData({ ...formData, logoName: e.target.value })}
-                        placeholder="VD: Tatu"
-                        disabled={isLoading}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
-                    />
-                </div>
-            </div>
 
-            {/* Row 5: Source + Voice Over + Sub */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Source tổng
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.sourceTotal}
-                        onChange={(e) => setFormData({ ...formData, sourceTotal: e.target.value })}
-                        placeholder="VD: Voice, Music..."
-                        disabled={isLoading}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Voice Over
-                    </label>
-                    <div className="flex gap-4 pt-2">
-                        {[{ value: true, label: 'Có' }, { value: false, label: 'Không' }].map(opt => (
-                            <button
-                                key={String(opt.value)}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, hasVoiceOver: opt.value })}
-                                disabled={isLoading}
-                                className={cn(
-                                    'flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-all',
-                                    formData.hasVoiceOver === opt.value
-                                        ? 'border-[#F59E0B] bg-amber-50 text-[#F59E0B]'
-                                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                                )}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phụ đề (Sub)
-                    </label>
-                    <div className="flex gap-4 pt-2">
-                        {[{ value: true, label: 'Có' }, { value: false, label: 'Không' }].map(opt => (
-                            <button
-                                key={String(opt.value)}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, hasSub: opt.value })}
-                                disabled={isLoading}
-                                className={cn(
-                                    'flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-all',
-                                    formData.hasSub === opt.value
-                                        ? 'border-[#F59E0B] bg-amber-50 text-[#F59E0B]'
-                                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                                )}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
+
+            {/* Voice Over */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Voice Over
+                </label>
+                <div className="flex gap-4">
+                    {[{ value: true, label: 'Có' }, { value: false, label: 'Không' }].map(opt => (
+                        <button
+                            key={String(opt.value)}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, hasVoiceOver: opt.value })}
+                            disabled={isLoading}
+                            className={cn(
+                                'px-6 py-2 rounded-lg border-2 font-medium transition-all',
+                                formData.hasVoiceOver === opt.value
+                                    ? 'border-[#F59E0B] bg-amber-50 text-[#F59E0B]'
+                                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                            )}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 

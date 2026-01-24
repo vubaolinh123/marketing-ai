@@ -43,30 +43,62 @@ export default function BrandLogoSection({ data, onChange }: BrandLogoSectionPro
                 />
             </div>
 
-            {/* Logo URL */}
+            {/* Logo Upload */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Link Logo thương hiệu
+                    Logo thương hiệu
                 </label>
-                <input
-                    type="text"
-                    value={data.logoUrl}
-                    onChange={(e) => onChange({ ...data, logoUrl: e.target.value })}
-                    placeholder="https://drive.google.com/... hoặc URL hình ảnh logo"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
-                />
-                {data.logoUrl && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200 inline-block">
-                        <img
-                            src={data.logoUrl}
-                            alt="Logo preview"
-                            className="max-w-[120px] max-h-[80px] object-contain"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
+                <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                        onChange({ ...data, logoUrl: reader.result as string });
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
                             }}
+                            className="hidden"
+                            id="logo-upload"
                         />
+                        <label
+                            htmlFor="logo-upload"
+                            className="flex-1 px-4 py-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#F59E0B] text-gray-500 hover:text-[#F59E0B] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="font-medium">Upload Logo</span>
+                        </label>
+                        {data.logoUrl && (
+                            <div className="relative">
+                                <img
+                                    src={data.logoUrl}
+                                    alt="Logo preview"
+                                    className="w-16 h-16 rounded-lg object-contain border border-gray-200 bg-gray-50 p-1"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => onChange({ ...data, logoUrl: '' })}
+                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
                     </div>
-                )}
+                    <p className="text-xs text-gray-500">
+                        Hỗ trợ định dạng: PNG, JPG, SVG. Kích thước tối đa: 2MB
+                    </p>
+                </div>
             </div>
 
             {/* Brand Identity */}

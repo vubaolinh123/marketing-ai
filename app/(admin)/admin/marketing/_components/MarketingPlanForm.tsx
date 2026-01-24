@@ -67,7 +67,7 @@ export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading 
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
+                        <div lang="vi">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Ngày bắt đầu <span className="text-red-500">*</span>
                             </label>
@@ -79,7 +79,7 @@ export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading 
                                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
                             />
                         </div>
-                        <div>
+                        <div lang="vi">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Ngày kết thúc <span className="text-red-500">*</span>
                             </label>
