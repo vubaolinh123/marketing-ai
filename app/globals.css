@@ -1,34 +1,34 @@
 @import "tailwindcss";
 
 /* ============================================
-   AI CONTENT GENERATOR - DESIGN SYSTEM
-   Theme: Modern Dark with Amber/Orange accents
+   EASY MARKETING - DESIGN SYSTEM
+   Theme: Modern with Yellow/Blue accents (based on logo)
    ============================================ */
 
 :root {
-  /* ===== Primary Colors - Amber ===== */
-  --color-primary-50: #FFFBEB;
-  --color-primary-100: #FEF3C7;
-  --color-primary-200: #FDE68A;
-  --color-primary-300: #FCD34D;
-  --color-primary-400: #FBBF24;
-  --color-primary-500: #F59E0B;
-  --color-primary-600: #D97706;
-  --color-primary-700: #B45309;
-  --color-primary-800: #92400E;
-  --color-primary-900: #78350F;
+  /* ===== Primary Colors - Yellow (từ logo Easy Marketing) ===== */
+  --color-primary-50: #FFFEF5;
+  --color-primary-100: #FFFDE0;
+  --color-primary-200: #FFF9B3;
+  --color-primary-300: #FFF480;
+  --color-primary-400: #FFEC4D;
+  --color-primary-500: #FFD700;
+  --color-primary-600: #E5C000;
+  --color-primary-700: #CCB000;
+  --color-primary-800: #B29800;
+  --color-primary-900: #8C7800;
   
-  /* ===== Secondary Colors - Orange ===== */
-  --color-secondary-50: #FFF7ED;
-  --color-secondary-100: #FFEDD5;
-  --color-secondary-200: #FED7AA;
-  --color-secondary-300: #FDBA74;
-  --color-secondary-400: #FB923C;
-  --color-secondary-500: #F97316;
-  --color-secondary-600: #EA580C;
-  --color-secondary-700: #C2410C;
-  --color-secondary-800: #9A3412;
-  --color-secondary-900: #7C2D12;
+  /* ===== Secondary Colors - Blue (cho background gradient) ===== */
+  --color-secondary-50: #F0F7FF;
+  --color-secondary-100: #E0EFFF;
+  --color-secondary-200: #B3D4FF;
+  --color-secondary-300: #80B8FF;
+  --color-secondary-400: #4A90D9;
+  --color-secondary-500: #3B82F6;
+  --color-secondary-600: #2563EB;
+  --color-secondary-700: #1D4ED8;
+  --color-secondary-800: #1E40AF;
+  --color-secondary-900: #1E3A8A;
   
   /* ===== Neutral Colors ===== */
   --color-gray-50: #FAFAFA;
@@ -53,19 +53,19 @@
   --border-hover: #D4D4D8;
   
   /* ===== Gradients ===== */
-  --gradient-primary: linear-gradient(135deg, #F59E0B 0%, #EA580C 100%);
-  --gradient-primary-hover: linear-gradient(135deg, #FBBF24 0%, #F97316 100%);
-  --gradient-hero: linear-gradient(180deg, rgba(245, 158, 11, 0.06) 0%, transparent 50%);
-  --gradient-glow: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.1) 0%, transparent 50%);
-  --gradient-card: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
+  --gradient-primary: linear-gradient(135deg, #FFD700 0%, #F5C800 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #FFEC4D 0%, #FFD700 100%);
+  --gradient-hero: linear-gradient(180deg, #87CEEB 0%, #4A90D9 40%, #E0EFFF 100%);
+  --gradient-glow: radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.15) 0%, transparent 50%);
+  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
   
   /* ===== Shadows - Light Theme ===== */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 40px rgba(245, 158, 11, 0.2);
-  --shadow-glow-lg: 0 0 80px rgba(245, 158, 11, 0.25);
+  --shadow-glow: 0 0 40px rgba(255, 215, 0, 0.25);
+  --shadow-glow-lg: 0 0 80px rgba(255, 215, 0, 0.3);
   
   /* ===== Typography ===== */
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
@@ -118,7 +118,7 @@ body {
 
 /* ===== Selection ===== */
 ::selection {
-  background: rgba(245, 158, 11, 0.3);
+  background: rgba(255, 215, 0, 0.3);
   color: var(--foreground);
 }
 
@@ -208,10 +208,10 @@ a {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.35);
   }
   50% {
-    box-shadow: 0 0 40px rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.55);
   }
 }
 

@@ -14,8 +14,11 @@ export default function AdminGuard({ children }: AdminGuardProps) {
 
     useEffect(() => {
         if (!isLoading) {
-            if (!isAuthenticated || !user?.isAdmin) {
-                router.replace('/');
+            if (!isAuthenticated) {
+                router.replace('/login');
+            } else if (user?.role !== 'admin') {
+                // User is logged in but not admin
+                router.replace('/login');
             }
         }
     }, [isLoading, isAuthenticated, user, router]);
@@ -32,8 +35,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
         );
     }
 
-    // Not admin, show nothing (redirect will happen)
-    if (!isAuthenticated || !user?.isAdmin) {
+    // Not authenticated or not admin, show nothing (redirect will happen)
+    if (!isAuthenticated || user?.role !== 'admin') {
         return null;
     }
 

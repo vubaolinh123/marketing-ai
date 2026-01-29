@@ -27,6 +27,37 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8"
         >
+            {/* Brand Settings Toggle */}
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-200 p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white flex items-center justify-center">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-900">Sử dụng thông tin thương hiệu</p>
+                            <p className="text-sm text-gray-500">Áp dụng logo và thông tin từ AI Settings</p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => onChange({ ...data, useBrandSettings: !data.useBrandSettings })}
+                        disabled={isLoading}
+                        className={cn(
+                            'w-14 h-7 rounded-full transition-colors relative',
+                            data.useBrandSettings ? 'bg-blue-500' : 'bg-gray-300'
+                        )}
+                    >
+                        <span className={cn(
+                            'absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all',
+                            data.useBrandSettings ? 'left-8' : 'left-1'
+                        )} />
+                    </button>
+                </div>
+            </div>
+
             {/* Upload Section */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -37,15 +68,17 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
                     images={data.images}
                     onChange={(images) => onChange({ ...data, images })}
                     disabled={isLoading}
+                    maxImages={1}
                 />
             </div>
 
             {/* Background Options */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white flex items-center justify-center text-sm font-bold">2</span>
-                    Chọn bối cảnh
+                    Chọn bối cảnh / Tình huống
                 </h3>
+                <p className="text-sm text-gray-500 mb-4">AI sẽ biến đổi sản phẩm vào bối cảnh mới - không chỉ thay background</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {backgroundOptions.map(option => (
                         <button
@@ -77,11 +110,14 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
                         animate={{ opacity: 1, height: 'auto' }}
                         className="mt-4"
                     >
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-3 text-sm text-amber-800">
+                            <span className="font-medium">💡 Mẹo:</span> Mô tả chi tiết tình huống bạn muốn. VD: "Miếng thịt bò đang được đầu bếp mặc áo trắng rán trên chảo gang, khói bốc lên, nhà hàng sang trọng"
+                        </div>
                         <textarea
                             value={data.customBackground}
                             onChange={(e) => onChange({ ...data, customBackground: e.target.value })}
-                            placeholder="Mô tả bối cảnh bạn muốn... VD: Bàn gỗ cạnh cửa sổ với ánh nắng buổi sáng"
-                            rows={3}
+                            placeholder="Mô tả CHI TIẾT tình huống bạn muốn AI tạo ra...&#10;VD: Miếng thịt đang được nướng trên vỉ than hồng, khói bay lên, đầu bếp đang lật thịt..."
+                            rows={4}
                             disabled={isLoading}
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent resize-none transition-all"
                         />
@@ -177,12 +213,12 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
 
                 {/* Additional Notes */}
                 <div className="mt-6">
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Yêu cầu thêm (tùy chọn)</label>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Chi tiết bổ sung (tuỳ chọn)</label>
                     <textarea
                         value={data.additionalNotes}
                         onChange={(e) => onChange({ ...data, additionalNotes: e.target.value })}
-                        placeholder="Mô tả thêm yêu cầu cho AI..."
-                        rows={2}
+                        placeholder="Thêm chi tiết cho AI...&#10;VD: Thêm người phụ nữ đang cắt thịt, ánh đèn vàng ấm, có lọ hoa hồng trên bàn..."
+                        rows={3}
                         disabled={isLoading}
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent resize-none transition-all"
                     />

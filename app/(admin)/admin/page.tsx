@@ -81,12 +81,12 @@ export default function AdminDashboard() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="max-w-6xl mx-auto"
+            className="w-[95%] max-w-[1600px] mx-auto"
         >
             {/* Welcome Header */}
             <motion.div variants={itemVariants} className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    Xin chào, {user?.username}! 👋
+                    Xin chào, {user?.name}! 👋
                 </h1>
                 <p className="text-gray-600">
                     Chọn công cụ AI để bắt đầu tạo nội dung marketing.

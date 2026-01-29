@@ -15,7 +15,7 @@ export default function ScriptCard({ script, onView, onDelete, index }: ScriptCa
     const durationLabel = durationOptions.find(d => d.value === script.duration)?.label || script.duration;
     const sizeLabel = sizeOptions.find(s => s.value === script.size)?.label || script.size;
 
-    const formatDate = (date: Date) => {
+    const formatDate = (date: Date | string) => {
         return new Intl.DateTimeFormat('vi-VN', {
             day: '2-digit',
             month: '2-digit',

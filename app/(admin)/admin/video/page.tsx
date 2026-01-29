@@ -3,7 +3,9 @@
 import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { generateFakeScript, type GeneratedScript, type VideoScriptInput } from '@/lib/fakeData';
+import { videoScriptApi, VideoScript } from '@/lib/api';
+import toast from '@/lib/toast';
+import type { VideoScriptFormData } from './_components/VideoScriptForm';
 
 // Dynamic imports
 const VideoScriptForm = dynamic(() => import('./_components/VideoScriptForm'), { ssr: false });
@@ -14,18 +16,41 @@ type Step = 'form' | 'loading' | 'result';
 
 export default function VideoScriptPage() {
     const [step, setStep] = useState<Step>('form');
-    const [generatedScript, setGeneratedScript] = useState<GeneratedScript | null>(null);
+    const [generatedScript, setGeneratedScript] = useState<VideoScript | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleFormSubmit = useCallback(async (data: VideoScriptInput) => {
+    const handleFormSubmit = useCallback(async (data: VideoScriptFormData) => {
         setStep('loading');
+        setIsLoading(true);
 
-        // Fake AI generation delay (2 seconds)
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            const response = await videoScriptApi.generate({
+                title: data.title,
+                duration: data.duration,
+                sceneCount: data.sceneCount,
+                size: data.size,
+                hasVoiceOver: data.hasVoiceOver,
+                otherRequirements: data.otherRequirements,
+                ideaMode: data.ideaMode,
+                customIdea: data.customIdea,
+                useBrandSettings: data.useBrandSettings
+            });
 
-        // Generate fake script
-        const script = generateFakeScript();
-        setGeneratedScript(script);
-        setStep('result');
+            if (response.success && response.data) {
+                setGeneratedScript(response.data);
+                setStep('result');
+                toast.success('Tạo kịch bản thành công!');
+            } else {
+                throw new Error(response.message || 'Lỗi không xác định');
+            }
+        } catch (error: unknown) {
+            console.error('Generate script error:', error);
+            const message = error instanceof Error ? error.message : 'Lỗi khi tạo kịch bản';
+            toast.error(message);
+            setStep('form');
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
 
     const handleReset = useCallback(() => {
@@ -34,7 +59,7 @@ export default function VideoScriptPage() {
     }, []);
 
     return (
-        <div className="max-w-6xl mx-auto">
+        <div className="w-[95%] max-w-[1600px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -69,10 +94,10 @@ export default function VideoScriptPage() {
                     {['form', 'result'].map((s, i) => (
                         <div key={s} className="flex items-center">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${step === s || (step === 'loading' && s === 'form')
-                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                    : step === 'result' && s === 'form'
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-gray-200 text-gray-500'
+                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                                : step === 'result' && s === 'form'
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-gray-200 text-gray-500'
                                 }`}>
                                 {step === 'result' && s === 'form' ? (
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -84,8 +109,8 @@ export default function VideoScriptPage() {
                             </div>
                             {i < 1 && (
                                 <div className={`w-12 h-1 mx-2 rounded ${step === 'result' || step === 'loading'
-                                        ? 'bg-green-500'
-                                        : 'bg-gray-200'
+                                    ? 'bg-green-500'
+                                    : 'bg-gray-200'
                                     }`} />
                             )}
                         </div>
@@ -105,7 +130,7 @@ export default function VideoScriptPage() {
                         >
                             <VideoScriptForm
                                 onSubmit={handleFormSubmit}
-                                isLoading={false}
+                                isLoading={isLoading}
                             />
                         </motion.div>
                     )}
@@ -118,7 +143,18 @@ export default function VideoScriptPage() {
                             exit={{ opacity: 0, x: -20 }}
                         >
                             <SceneTable
-                                script={generatedScript}
+                                script={{
+                                    summary: generatedScript.summary,
+                                    scenes: generatedScript.scenes.map(scene => ({
+                                        id: scene.sceneNumber,
+                                        location: scene.location,
+                                        shotType: scene.shotType,
+                                        description: scene.description,
+                                        voiceOver: scene.voiceOver,
+                                        source: scene.source,
+                                        note: scene.note
+                                    }))
+                                }}
                                 onReset={handleReset}
                             />
                         </motion.div>

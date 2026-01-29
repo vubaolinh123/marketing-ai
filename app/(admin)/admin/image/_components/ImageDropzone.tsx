@@ -8,10 +8,12 @@ interface ImageDropzoneProps {
     images: File[];
     onChange: (files: File[]) => void;
     disabled?: boolean;
+    maxImages?: number; // Default 1
 }
 
-export default function ImageDropzone({ images, onChange, disabled }: ImageDropzoneProps) {
+export default function ImageDropzone({ images, onChange, disabled, maxImages = 1 }: ImageDropzoneProps) {
     const [isDragging, setIsDragging] = useState(false);
+    const hasMaxImages = images.length >= maxImages;
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -26,21 +28,25 @@ export default function ImageDropzone({ images, onChange, disabled }: ImageDropz
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-        if (disabled) return;
+        if (disabled || hasMaxImages) return;
 
         const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
         if (files.length > 0) {
-            onChange([...images, ...files]);
+            // Replace images (single image mode)
+            onChange([files[0]]);
         }
-    }, [images, onChange, disabled]);
+    }, [onChange, disabled, hasMaxImages]);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        if (disabled) return;
+        if (disabled || hasMaxImages) return;
         const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
         if (files.length > 0) {
-            onChange([...images, ...files]);
+            // Replace images (single image mode)
+            onChange([files[0]]);
         }
-    }, [images, onChange, disabled]);
+        // Reset input value to allow selecting same file again
+        e.target.value = '';
+    }, [onChange, disabled, hasMaxImages]);
 
     const removeImage = useCallback((index: number) => {
         onChange(images.filter((_, i) => i !== index));
@@ -64,9 +70,8 @@ export default function ImageDropzone({ images, onChange, disabled }: ImageDropz
                 <input
                     type="file"
                     accept="image/*"
-                    multiple
                     onChange={handleFileSelect}
-                    disabled={disabled}
+                    disabled={disabled || hasMaxImages}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
 
@@ -85,7 +90,7 @@ export default function ImageDropzone({ images, onChange, disabled }: ImageDropz
                         </p>
                         <p className="text-sm text-gray-500 mt-1">hoặc click để chọn file</p>
                     </div>
-                    <p className="text-xs text-gray-400">PNG, JPG, WEBP (tối đa 10MB)</p>
+                    <p className="text-xs text-gray-400">PNG, JPG, WEBP (tối đa 10MB) - Chỉ 1 ảnh</p>
                 </div>
             </div>
 

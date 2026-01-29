@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { settingsApi, AISettings } from '@/lib/api';
+import { showSuccess, showError } from '@/lib/toast';
 
 // Dynamic imports
 const BrandLogoSection = dynamic(() => import('./_components/BrandLogoSection'), { ssr: false });
@@ -12,6 +14,8 @@ const BrandColorsSection = dynamic(() => import('./_components/BrandColorsSectio
 const BrandLanguageSection = dynamic(() => import('./_components/BrandLanguageSection'), { ssr: false });
 const BrandToneSection = dynamic(() => import('./_components/BrandToneSection'), { ssr: false });
 const BrandProductSection = dynamic(() => import('./_components/BrandProductSection'), { ssr: false });
+const FacebookSettingsSection = dynamic(() => import('./_components/FacebookSettingsSection'), { ssr: false });
+const AIModelSettingsSection = dynamic(() => import('./_components/AIModelSettingsSection'), { ssr: false });
 
 interface BrandData {
     logo: {
@@ -37,6 +41,14 @@ interface BrandData {
         productGroups: string[];
         strengths: string;
         suitableFor: string[];
+    };
+    facebook: {
+        facebookToken: string;
+    };
+    aiModels: {
+        textModel: string;
+        visionModel: string;
+        imageGenModel: string;
     };
 }
 
@@ -64,6 +76,14 @@ const defaultData: BrandData = {
         productGroups: [],
         strengths: '',
         suitableFor: [],
+    },
+    facebook: {
+        facebookToken: '',
+    },
+    aiModels: {
+        textModel: 'gemini-2.5-flash',
+        visionModel: 'gemini-2.0-flash',
+        imageGenModel: 'gemini-2.0-flash-exp-image-generation',
     },
 };
 
@@ -113,12 +133,85 @@ const sections = [
             </svg>
         ),
     },
+    {
+        id: 'facebook',
+        title: 'Cấu hình Facebook',
+        icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+            </svg>
+        ),
+    },
+    {
+        id: 'aiModels',
+        title: 'AI Model Settings',
+        icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+        ),
+    },
 ];
 
 export default function BrandSettingsPage() {
     const [data, setData] = useState<BrandData>(defaultData);
     const [expandedSections, setExpandedSections] = useState<string[]>(['logo']);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Fetch settings on mount
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                setIsLoading(true);
+                const response = await settingsApi.get();
+
+                if (response.success && response.data) {
+                    const settings = response.data;
+                    setData({
+                        logo: {
+                            brandName: settings.logo?.brandName || '',
+                            logoUrl: settings.logo?.logoUrl || '',
+                            brandIdentity: settings.logo?.brandIdentity || '',
+                            resourceLinks: settings.logo?.resourceLinks || []
+                        },
+                        colors: {
+                            primaryColor: settings.colors?.primaryColor || '#F59E0B',
+                            backgroundColor: settings.colors?.backgroundColor || '#1a1a1a',
+                            accentColor: settings.colors?.accentColor || '#0891b2'
+                        },
+                        language: {
+                            keywords: settings.language?.keywords || [],
+                            customerTerm: settings.language?.customerTerm || ''
+                        },
+                        tone: {
+                            overallTone: settings.tone?.overallTone || [],
+                            contextDescriptions: settings.tone?.contextDescriptions || []
+                        },
+                        product: {
+                            productGroups: settings.product?.productGroups || [],
+                            strengths: settings.product?.strengths || '',
+                            suitableFor: settings.product?.suitableFor || []
+                        },
+                        facebook: {
+                            facebookToken: settings.facebook?.facebookToken || ''
+                        },
+                        aiModels: {
+                            textModel: settings.aiModels?.textModel || 'gemini-2.5-flash',
+                            visionModel: settings.aiModels?.visionModel || 'gemini-2.0-flash',
+                            imageGenModel: settings.aiModels?.imageGenModel || 'gemini-2.0-flash-exp-image-generation'
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch settings:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchSettings();
+    }, []);
 
     const toggleSection = useCallback((sectionId: string) => {
         setExpandedSections(prev =>
@@ -130,10 +223,23 @@ export default function BrandSettingsPage() {
 
     const handleSave = useCallback(async () => {
         setIsSaving(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setIsSaving(false);
-        alert('Đã lưu cài đặt thương hiệu!');
-    }, []);
+
+        try {
+            const response = await settingsApi.update(data);
+
+            if (response.success) {
+                showSuccess('Đã lưu cài đặt thương hiệu!');
+            } else {
+                showError(response.message || 'Lưu thất bại');
+            }
+        } catch (error: unknown) {
+            console.error('Save error:', error);
+            const apiError = error as { message?: string };
+            showError(apiError.message || 'Đã xảy ra lỗi khi lưu');
+        } finally {
+            setIsSaving(false);
+        }
+    }, [data]);
 
     const renderSectionContent = (sectionId: string) => {
         switch (sectionId) {
@@ -141,41 +247,77 @@ export default function BrandSettingsPage() {
                 return (
                     <BrandLogoSection
                         data={data.logo}
-                        onChange={(logoData) => setData({ ...data, logo: logoData })}
+                        onChange={(logoData) => setData(prev => ({ ...prev, logo: logoData }))}
                     />
                 );
             case 'colors':
                 return (
                     <BrandColorsSection
                         data={data.colors}
-                        onChange={(colorsData) => setData({ ...data, colors: colorsData })}
+                        onChange={(colorsData) => setData(prev => ({ ...prev, colors: colorsData }))}
                     />
                 );
             case 'language':
                 return (
                     <BrandLanguageSection
                         data={data.language}
-                        onChange={(languageData) => setData({ ...data, language: languageData })}
+                        onChange={(languageData) => setData(prev => ({ ...prev, language: languageData }))}
                     />
                 );
             case 'tone':
                 return (
                     <BrandToneSection
                         data={data.tone}
-                        onChange={(toneData) => setData({ ...data, tone: toneData })}
+                        onChange={(toneData) => setData(prev => ({ ...prev, tone: toneData }))}
                     />
                 );
             case 'product':
                 return (
                     <BrandProductSection
                         data={data.product}
-                        onChange={(productData) => setData({ ...data, product: productData })}
+                        onChange={(productData) => setData(prev => ({ ...prev, product: productData }))}
+                    />
+                );
+            case 'facebook':
+                return (
+                    <FacebookSettingsSection
+                        data={data.facebook}
+                        onChange={(facebookData) => setData(prev => ({ ...prev, facebook: facebookData }))}
+                    />
+                );
+            case 'aiModels':
+                return (
+                    <AIModelSettingsSection
+                        data={data.aiModels}
+                        onChange={(aiModelsData) => setData(prev => ({ ...prev, aiModels: aiModelsData }))}
                     />
                 );
             default:
                 return null;
         }
     };
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="mb-8">
+                    <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2" />
+                    <div className="h-4 w-96 bg-gray-100 rounded animate-pulse" />
+                </div>
+                <div className="space-y-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gray-200 rounded-xl" />
+                                <div className="h-5 w-48 bg-gray-200 rounded" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto">

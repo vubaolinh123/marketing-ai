@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User, AuthState, LoginCredentials } from '@/types';
+import { authApi, getToken, removeToken } from '@/lib/api';
 
 interface AuthContextType extends AuthState {
     login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
@@ -18,43 +19,42 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Fake credentials for demo
-const FAKE_CREDENTIALS = {
-    username: 'admin',
-    password: 'admin',
-};
-
-// Fake user data
-const FAKE_USER: User = {
-    id: '1',
-    username: 'admin',
-    email: 'admin@easymarketing.vn',
-    companyName: 'Easy Marketing',
-    customPrompt: 'Bạn là trợ lý AI chuyên nghiệp trong lĩnh vực marketing...',
-    isAdmin: true,
-    createdAt: new Date(),
-};
-
 const AUTH_STORAGE_KEY = 'ai-content-auth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const [state, setState] = useState<AuthState>({
         user: null,
+        token: null,
         isAuthenticated: false,
         isLoading: true,
     });
 
     // Check for existing session on mount
     useEffect(() => {
-        const checkAuth = () => {
+        const checkAuth = async () => {
             try {
-                const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    if (parsed.user) {
+                const token = getToken();
+
+                if (token) {
+                    // Verify token by calling getMe API
+                    const response = await authApi.getMe();
+
+                    if (response.success && response.data) {
+                        const user: User = {
+                            id: response.data.id,
+                            name: response.data.name,
+                            email: response.data.email,
+                            avatar: response.data.avatar,
+                            role: response.data.role,
+                        };
+
+                        // Save to localStorage for persistence
+                        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user }));
+
                         setState({
-                            user: parsed.user,
+                            user,
+                            token,
                             isAuthenticated: true,
                             isLoading: false,
                         });
@@ -62,12 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     }
                 }
             } catch (error) {
-                console.error('Failed to parse auth state:', error);
+                console.error('Failed to verify auth:', error);
+                // Clear invalid token
+                removeToken();
                 localStorage.removeItem(AUTH_STORAGE_KEY);
             }
 
             setState({
                 user: null,
+                token: null,
                 isAuthenticated: false,
                 isLoading: false,
             });
@@ -80,43 +83,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         async (credentials: LoginCredentials): Promise<{ success: boolean; error?: string }> => {
             setState((prev) => ({ ...prev, isLoading: true }));
 
-            // Simulate API call delay
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            // Check credentials
-            if (
-                credentials.username === FAKE_CREDENTIALS.username &&
-                credentials.password === FAKE_CREDENTIALS.password
-            ) {
-                const authData = { user: FAKE_USER };
-                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-
-                setState({
-                    user: FAKE_USER,
-                    isAuthenticated: true,
-                    isLoading: false,
+            try {
+                const response = await authApi.login({
+                    email: credentials.email,
+                    password: credentials.password,
                 });
 
-                return { success: true };
-            }
+                if (response.success && response.data) {
+                    const user: User = {
+                        id: response.data.user.id,
+                        name: response.data.user.name,
+                        email: response.data.user.email,
+                        avatar: response.data.user.avatar,
+                        role: response.data.user.role,
+                    };
 
-            setState((prev) => ({ ...prev, isLoading: false }));
-            return {
-                success: false,
-                error: 'Tên đăng nhập hoặc mật khẩu không đúng',
-            };
+                    // Save user to localStorage
+                    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ user }));
+
+                    setState({
+                        user,
+                        token: response.data.token,
+                        isAuthenticated: true,
+                        isLoading: false,
+                    });
+
+                    return { success: true };
+                }
+
+                setState((prev) => ({ ...prev, isLoading: false }));
+                return {
+                    success: false,
+                    error: response.message || 'Đăng nhập thất bại',
+                };
+            } catch (error: unknown) {
+                setState((prev) => ({ ...prev, isLoading: false }));
+
+                const apiError = error as { message?: string };
+                return {
+                    success: false,
+                    error: apiError.message || 'Email hoặc mật khẩu không đúng',
+                };
+            }
         },
         []
     );
 
-    const logout = useCallback(() => {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-        setState({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-        });
-        router.push('/login');
+    const logout = useCallback(async () => {
+        try {
+            await authApi.logout();
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            setState({
+                user: null,
+                token: null,
+                isAuthenticated: false,
+                isLoading: false,
+            });
+            router.push('/login');
+        }
     }, [router]);
 
     return (

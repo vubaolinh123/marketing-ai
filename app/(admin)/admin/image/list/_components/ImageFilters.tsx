@@ -1,13 +1,19 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { backgroundOptions, outputSizeOptions } from '@/lib/fakeData/image';
+import { backgroundOptions } from '@/lib/fakeData/image';
 
 export interface ImageFilterState {
     search: string;
     backgroundType: string;
-    outputSize: string;
+    status: string;
 }
+
+const statusOptions = [
+    { value: 'completed', label: 'Hoàn thành' },
+    { value: 'processing', label: 'Đang xử lý' },
+    { value: 'failed', label: 'Lỗi' },
+];
 
 interface ImageFiltersProps {
     filters: ImageFilterState;
@@ -19,11 +25,11 @@ export default function ImageFilters({ filters, onFiltersChange }: ImageFiltersP
         onFiltersChange({
             search: '',
             backgroundType: '',
-            outputSize: '',
+            status: '',
         });
     };
 
-    const hasFilters = filters.search || filters.backgroundType || filters.outputSize;
+    const hasFilters = filters.search || filters.backgroundType || filters.status;
 
     return (
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm mb-6">
@@ -56,14 +62,14 @@ export default function ImageFilters({ filters, onFiltersChange }: ImageFiltersP
                     ))}
                 </select>
 
-                {/* Output Size */}
+                {/* Status */}
                 <select
-                    value={filters.outputSize}
-                    onChange={(e) => onFiltersChange({ ...filters, outputSize: e.target.value })}
+                    value={filters.status}
+                    onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
                     className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all min-w-[120px]"
                 >
-                    <option value="">Tất cả kích thước</option>
-                    {outputSizeOptions.map(option => (
+                    <option value="">Tất cả trạng thái</option>
+                    {statusOptions.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                 </select>

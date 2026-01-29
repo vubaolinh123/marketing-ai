@@ -1,21 +1,23 @@
+// User type matching backend
 export interface User {
     id: string;
-    username: string;
+    name: string;
     email: string;
-    companyName?: string;
-    customPrompt?: string;
-    isAdmin: boolean;
-    createdAt: Date;
+    avatar?: string;
+    role: 'user' | 'admin';
+    isActive?: boolean;
+    createdAt?: Date;
 }
 
 export interface AuthState {
     user: User | null;
+    token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
 }
 
 export interface LoginCredentials {
-    username: string;
+    email: string;
     password: string;
 }
 

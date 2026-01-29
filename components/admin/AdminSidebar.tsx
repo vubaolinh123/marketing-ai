@@ -115,7 +115,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
                         onClick={onClose}
                     />
                 )}
@@ -126,24 +126,27 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                 initial={false}
                 animate={{
                     width: isCollapsed ? 72 : 280,
-                    x: isOpen ? 0 : (typeof window !== 'undefined' && window.innerWidth < 1024) ? -280 : 0
+                    x: isOpen ? 0 : (typeof window !== 'undefined' && window.innerWidth < 768) ? -280 : 0
                 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 className={cn(
-                    'fixed lg:static inset-y-0 left-0 z-50',
-                    'bg-gradient-to-b from-[#1F2937] via-[#111827] to-[#0F172A]',
-                    'border-r border-white/10',
+                    'fixed md:sticky inset-y-0 left-0 top-0 z-50',
+                    'h-full',
+                    'bg-gradient-to-b from-[#E0EFFF] via-[#87CEEB]/50 to-white',
+                    'border-r border-[#4A90D9]/20',
                     'flex flex-col',
-                    'shadow-xl'
+                    'shadow-xl',
+                    // Hide on mobile by default (only show when isOpen)
+                    !isOpen && 'max-md:-translate-x-full'
                 )}
                 style={{ width: isCollapsed ? 72 : 280 }}
             >
                 {/* Mobile Close Button */}
-                <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10">
-                    <span className="font-semibold text-white">Menu</span>
+                <div className="md:hidden flex items-center justify-between p-4 border-b border-[#4A90D9]/20">
+                    <span className="font-semibold text-gray-800">Menu</span>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                        className="p-2 rounded-lg text-gray-600 hover:bg-[#4A90D9]/10 hover:text-gray-900 transition-colors"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -173,8 +176,8 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                                             'w-full group relative flex items-center gap-3 rounded-xl transition-all duration-200',
                                             isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3',
                                             isActive
-                                                ? 'bg-white/10 text-white'
-                                                : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                                                ? 'bg-[#4A90D9]/20 text-[#1D4ED8]'
+                                                : 'text-gray-700 hover:bg-[#4A90D9]/10 hover:text-[#3B82F6]'
                                         )}
                                     >
                                         <motion.span
@@ -211,7 +214,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
 
                                         {/* Tooltip when collapsed */}
                                         {isCollapsed && (
-                                            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                                            <div className="absolute left-full ml-2 px-3 py-2 bg-[#3B82F6] text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
                                                 {item.label}
                                             </div>
                                         )}
@@ -224,15 +227,15 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                                             'group relative flex items-center gap-3 rounded-xl transition-all duration-200',
                                             isCollapsed ? 'px-3 py-3 justify-center' : 'px-4 py-3',
                                             isActive
-                                                ? 'bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white shadow-lg shadow-orange-500/30'
-                                                : 'text-gray-200 hover:bg-white/10 hover:text-white'
+                                                ? 'bg-gradient-to-r from-[#FFD700] to-[#F5C800] text-gray-900 shadow-lg shadow-[#FFD700]/30'
+                                                : 'text-gray-700 hover:bg-[#4A90D9]/10 hover:text-[#3B82F6]'
                                         )}
                                     >
                                         <motion.span
                                             whileHover={{ scale: 1.1 }}
                                             className={cn(
                                                 'flex-shrink-0',
-                                                isActive ? 'text-white' : 'text-gray-200'
+                                                isActive ? 'text-gray-900' : 'text-gray-700'
                                             )}
                                         >
                                             {item.icon}
@@ -246,7 +249,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                                                     exit={{ opacity: 0 }}
                                                     className={cn(
                                                         'font-medium whitespace-nowrap',
-                                                        isActive ? 'text-white' : 'text-gray-200'
+                                                        isActive ? 'text-gray-900' : 'text-gray-700'
                                                     )}
                                                 >
                                                     {item.label}
@@ -255,7 +258,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                                         </AnimatePresence>
 
                                         {isCollapsed && (
-                                            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                                            <div className="absolute left-full ml-2 px-3 py-2 bg-[#3B82F6] text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
                                                 {item.label}
                                             </div>
                                         )}
@@ -280,17 +283,17 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                                                     className={cn(
                                                         'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200',
                                                         isChildActive(child.href)
-                                                            ? 'bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white shadow-md shadow-orange-500/20'
-                                                            : 'hover:bg-white/10'
+                                                            ? 'bg-gradient-to-r from-[#FFD700] to-[#F5C800] text-gray-900 shadow-md shadow-[#FFD700]/20'
+                                                            : 'hover:bg-[#4A90D9]/10'
                                                     )}
                                                 >
                                                     <span className={cn(
                                                         'w-1.5 h-1.5 rounded-full',
-                                                        isChildActive(child.href) ? 'bg-white' : 'bg-gray-400'
+                                                        isChildActive(child.href) ? 'bg-gray-900' : 'bg-[#4A90D9]'
                                                     )} />
                                                     <span className={cn(
                                                         'text-sm font-medium',
-                                                        isChildActive(child.href) ? 'text-white' : 'text-gray-200 hover:text-white'
+                                                        isChildActive(child.href) ? 'text-gray-900' : 'text-gray-700 hover:text-[#3B82F6]'
                                                     )}>
                                                         {child.label}
                                                     </span>
@@ -305,12 +308,12 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                 </nav>
 
                 {/* Bottom decoration */}
-                <div className="p-4 border-t border-white/10">
+                <div className="p-4 border-t border-[#4A90D9]/20">
                     <div className={cn(
-                        'rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 p-3',
+                        'rounded-xl bg-gradient-to-r from-[#FFD700]/20 to-[#4A90D9]/20 p-3',
                         isCollapsed && 'hidden'
                     )}>
-                        <p className="text-xs text-gray-300">
+                        <p className="text-xs text-gray-600 font-medium">
                             Easy Marketing AI Tools
                         </p>
                     </div>

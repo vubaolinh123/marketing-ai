@@ -87,7 +87,7 @@ export default function MarketingListPage() {
     }, [deleteModal.plan]);
 
     return (
-        <div className="max-w-6xl mx-auto">
+        <div className="w-[95%] max-w-[1600px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

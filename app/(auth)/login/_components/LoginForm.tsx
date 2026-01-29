@@ -9,7 +9,7 @@ export default function LoginForm() {
     const router = useRouter();
     const { login, isLoading } = useAuth();
     const [formData, setFormData] = useState({
-        username: '',
+        email: '',
         password: '',
     });
     const [error, setError] = useState('');
@@ -19,7 +19,16 @@ export default function LoginForm() {
         e.preventDefault();
         setError('');
 
-        const result = await login(formData);
+        // Basic validation
+        if (!formData.email || !formData.password) {
+            setError('Vui lòng nhập đầy đủ thông tin');
+            return;
+        }
+
+        const result = await login({
+            email: formData.email,
+            password: formData.password,
+        });
 
         if (result.success) {
             router.push('/admin');
@@ -47,20 +56,21 @@ export default function LoginForm() {
                 </div>
             )}
 
-            {/* Username Input */}
+            {/* Email Input */}
             <Input
-                name="username"
-                label="Tên đăng nhập"
-                placeholder="Nhập tên đăng nhập"
-                value={formData.username}
+                name="email"
+                type="email"
+                label="Email"
+                placeholder="Nhập email của bạn"
+                value={formData.email}
                 onChange={handleChange}
                 disabled={isLoading}
                 leftIcon={
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                     </svg>
                 }
-                autoComplete="username"
+                autoComplete="email"
                 required
             />
 
@@ -123,14 +133,14 @@ export default function LoginForm() {
                 </svg>
             </Button>
 
-            {/* Demo credentials hint */}
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                <p className="text-sm text-amber-700 flex items-center gap-2">
+            {/* Hint for creating account */}
+            <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
+                <p className="text-sm text-blue-700 flex items-center gap-2">
                     <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>
-                        <strong>Demo:</strong> Tài khoản <code className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">admin</code> / <code className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">admin</code>
+                        Chưa có tài khoản? Liên hệ admin để được cấp quyền truy cập.
                     </span>
                 </p>
             </div>

@@ -1,12 +1,15 @@
 // AI Image Generation Options and Fake Data
 
 export const backgroundOptions = [
-    { value: 'studio', label: 'Studio', description: 'Nền trắng/xám chuyên nghiệp' },
-    { value: 'outdoor', label: 'Outdoor', description: 'Cảnh ngoài trời tự nhiên' },
-    { value: 'lifestyle', label: 'Lifestyle', description: 'Bối cảnh sinh hoạt thực tế' },
-    { value: 'minimal', label: 'Minimal', description: 'Nền đơn giản, tối giản' },
-    { value: 'luxury', label: 'Luxury', description: 'Bối cảnh sang trọng, cao cấp' },
-    { value: 'custom', label: 'Tùy chỉnh', description: 'Mô tả bối cảnh theo ý bạn' },
+    { value: 'studio', label: '📸 Studio', description: 'Nền trắng/xám chuyên nghiệp' },
+    { value: 'outdoor', label: '🌳 Outdoor', description: 'Cảnh ngoài trời tự nhiên' },
+    { value: 'lifestyle', label: '👤 Lifestyle', description: 'Người đang sử dụng sản phẩm' },
+    { value: 'minimal', label: '⬜ Minimal', description: 'Nền đơn sắc, tối giản' },
+    { value: 'luxury', label: '✨ Luxury', description: 'Bối cảnh sang trọng, cao cấp' },
+    { value: 'kitchen', label: '🍳 Kitchen', description: 'Bếp chuyên nghiệp, đồ nấu' },
+    { value: 'restaurant', label: '🍽️ Restaurant', description: 'Nhà hàng, bàn tiệc' },
+    { value: 'action', label: '⚡ Action', description: 'Sản phẩm đang được sử dụng' },
+    { value: 'custom', label: '🎨 Tùy chỉnh', description: 'Mô tả bối cảnh sáng tạo' },
 ];
 
 export const logoPositionOptions = [
@@ -34,6 +37,7 @@ export interface ImageGenerationInput {
     logoPosition: string;
     outputSize: string;
     additionalNotes: string;
+    useBrandSettings: boolean;
 }
 
 export interface GeneratedImage {
@@ -73,6 +77,7 @@ export const defaultImageInput: ImageGenerationInput = {
     logoPosition: 'bottom-right',
     outputSize: '1:1',
     additionalNotes: '',
+    useBrandSettings: true,
 };
 
 // Image List Item for list page
@@ -101,7 +106,7 @@ const unsplashImages = [
     'photo-1491553895911-0055uj',
 ];
 
-const backgroundTypes = ['studio', 'outdoor', 'lifestyle', 'minimal', 'luxury'];
+const backgroundTypes = ['studio', 'outdoor', 'lifestyle', 'minimal', 'luxury', 'kitchen', 'restaurant', 'action'];
 const outputSizes = ['1:1', '4:5', '9:16', '16:9', '3:4'];
 
 export const fakeImageList: ImageListItem[] = Array.from({ length: 30 }, (_, i) => {

@@ -51,18 +51,23 @@ export default function ScriptFilters({ filters, onFiltersChange }: ScriptFilter
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Thời lượng
                     </label>
-                    <select
-                        value={filters.duration}
-                        onChange={(e) => onFiltersChange({ ...filters, duration: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                    >
-                        <option value="">Tất cả</option>
-                        {durationOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            list="duration-suggestions"
+                            value={filters.duration}
+                            onChange={(e) => onFiltersChange({ ...filters, duration: e.target.value })}
+                            placeholder="Tất cả thời lượng..."
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                        />
+                        <datalist id="duration-suggestions">
+                            {durationOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </datalist>
+                    </div>
                 </div>
 
                 {/* Size */}

@@ -6,6 +6,7 @@ import { fakeTopics, purposeOptions } from '@/lib/fakeData';
 export interface FilterState {
     topic: string;
     purpose: string;
+    status: string;
     search: string;
 }
 
@@ -14,6 +15,12 @@ interface ArticleFiltersProps {
     onFiltersChange: (filters: FilterState) => void;
 }
 
+const statusOptions = [
+    { value: '', label: 'Tất cả trạng thái' },
+    { value: 'draft', label: '📝 Nháp' },
+    { value: 'published', label: '✅ Đã xuất bản' },
+];
+
 export default function ArticleFilters({ filters, onFiltersChange }: ArticleFiltersProps) {
     return (
         <motion.div
@@ -21,7 +28,7 @@ export default function ArticleFilters({ filters, onFiltersChange }: ArticleFilt
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl border border-gray-200 p-4 lg:p-6 shadow-sm mb-6"
         >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* Search */}
                 <div className="sm:col-span-2 lg:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -84,10 +91,28 @@ export default function ArticleFilters({ filters, onFiltersChange }: ArticleFilt
                     </select>
                 </div>
 
+                {/* Status */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Trạng thái
+                    </label>
+                    <select
+                        value={filters.status}
+                        onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
+                    >
+                        {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* Reset Button */}
                 <div className="flex items-end">
                     <button
-                        onClick={() => onFiltersChange({ topic: '', purpose: '', search: '' })}
+                        onClick={() => onFiltersChange({ topic: '', purpose: '', status: '', search: '' })}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors font-medium"
                     >
                         Xóa bộ lọc

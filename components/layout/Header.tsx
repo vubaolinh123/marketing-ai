@@ -6,8 +6,8 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-    { label: 'Trang chủ', href: '/' },
-    { label: 'Công cụ', href: '#features' },
+    { label: 'Trang chủ', href: '/', isActive: true },
+    { label: 'Công cụ', href: '#features', isActive: false },
 ];
 
 export default function Header() {
@@ -28,52 +28,78 @@ export default function Header() {
             className={cn(
                 'fixed top-0 left-0 right-0 z-50',
                 'transition-all duration-300',
-                isScrolled
-                    ? 'bg-white/95 backdrop-blur-xl shadow-sm border-b border-gray-100'
-                    : 'bg-white/80 backdrop-blur-md'
+                'py-4'
             )}
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-[var(--header-height)]">
-                    {/* Logo with brand gradient background */}
-                    <Link href="/" className="flex items-center">
-                        <div className="bg-gradient-to-r from-[#F59E0B] to-[#EA580C] rounded-lg px-3 py-1.5 shadow-md">
-                            <Image
-                                src="/logo/logo.png"
-                                alt="Easy Marketing"
-                                width={150}
-                                height={32}
-                                className="h-7 w-auto"
-                                priority
-                            />
+            {/* Pill Container - Centered */}
+            <div className="max-w-5xl mx-auto px-4">
+                <div
+                    className={cn(
+                        'flex items-center justify-between',
+                        'h-16 px-4 lg:px-6',
+                        'rounded-full',
+                        'bg-white/95 backdrop-blur-xl',
+                        'border border-gray-200',
+                        'shadow-lg',
+                        'transition-all duration-300',
+                        isScrolled && 'shadow-xl'
+                    )}
+                >
+                    {/* Logo Section */}
+                    <Link href="/" className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center">
+                            <span className="text-xl font-bold text-gray-800">EASY</span>
+                            <div className="bg-[#FFD700] px-2 py-0.5 ml-1 rounded">
+                                <span className="text-sm font-bold text-gray-900">MARKETING</span>
+                            </div>
                         </div>
                     </Link>
 
-                    {/* Desktop Navigation */}
-                    <nav className="hidden md:flex items-center gap-8">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="text-gray-600 hover:text-gray-900 transition-colors duration-200 text-sm font-medium"
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
+                    {/* Desktop Navigation - Pill Style */}
+                    <nav className="hidden md:flex items-center">
+                        <div className="flex items-center bg-gray-100 rounded-full px-1 py-1">
+                            {navItems.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={cn(
+                                        'px-5 py-2 rounded-full text-sm font-medium transition-all duration-200',
+                                        item.isActive
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                    )}
+                                >
+                                    {item.label}
+                                </Link>
+                            ))}
+                        </div>
                     </nav>
 
-                    {/* Desktop CTA Button - Orange/Amber gradient */}
+                    {/* Desktop CTA Button - Yellow with arrow */}
                     <div className="hidden md:flex items-center">
                         <Link href="/login">
-                            <button className="inline-flex items-center justify-center gap-2 px-6 h-10 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-semibold text-sm hover:from-[#FBBF24] hover:to-[#F97316] transition-all shadow-md hover:shadow-lg">
+                            <button className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-full bg-[#FFD700] hover:bg-[#FFEC4D] text-gray-900 font-semibold text-sm transition-all shadow-md hover:shadow-lg">
                                 Đăng nhập
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M7 17L17 7M17 7H7M17 7V17"
+                                    />
+                                </svg>
                             </button>
                         </Link>
                     </div>
 
                     {/* Mobile Menu Button */}
                     <button
-                        className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                        className="md:hidden p-2 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         aria-label="Toggle menu"
                     >
@@ -90,38 +116,57 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu - Slide down */}
             <div
                 className={cn(
                     'md:hidden',
-                    'absolute top-full left-0 right-0',
-                    'bg-white/95 backdrop-blur-xl',
-                    'border-b border-gray-100 shadow-lg',
+                    'absolute top-full left-0 right-0 mt-2',
+                    'px-4',
                     'transition-all duration-300 ease-out',
                     isMobileMenuOpen
                         ? 'opacity-100 translate-y-0'
                         : 'opacity-0 -translate-y-4 pointer-events-none'
                 )}
             >
-                <nav className="px-4 py-6 space-y-4">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className="block text-gray-600 hover:text-gray-900 transition-colors text-lg font-medium"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
-                    <div className="pt-4 border-t border-gray-100">
-                        <Link href="/login" className="block">
-                            <button className="w-full inline-flex items-center justify-center gap-2 px-6 h-11 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-semibold hover:from-[#FBBF24] hover:to-[#F97316] transition-all shadow-md">
-                                Đăng nhập
-                            </button>
-                        </Link>
-                    </div>
-                </nav>
+                <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
+                    <nav className="p-4 space-y-2">
+                        {navItems.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    'block px-4 py-3 rounded-xl text-base font-medium transition-colors',
+                                    item.isActive
+                                        ? 'bg-gray-100 text-gray-900'
+                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                )}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+                        <div className="pt-2 border-t border-gray-100">
+                            <Link href="/login" className="block">
+                                <button className="w-full inline-flex items-center justify-center gap-2 px-6 h-12 rounded-xl bg-[#FFD700] hover:bg-[#FFEC4D] text-gray-900 font-semibold transition-all shadow-md">
+                                    Đăng nhập
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M7 17L17 7M17 7H7M17 7V17"
+                                        />
+                                    </svg>
+                                </button>
+                            </Link>
+                        </div>
+                    </nav>
+                </div>
             </div>
         </header>
     );

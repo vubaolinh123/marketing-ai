@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ImageGenerationInput, defaultImageInput } from '@/lib/fakeData/image';
+import { productImageApi, ProductImage } from '@/lib/api';
+import { uploadImage, getImageUrl } from '@/lib/api/upload.api';
 
 // Dynamic imports
 const ImageUploadForm = dynamic(() => import('./_components/ImageUploadForm'), { ssr: false });
@@ -22,42 +24,91 @@ const steps = [
 export default function AIImagePage() {
     const [currentStep, setCurrentStep] = useState<Step>('form');
     const [formData, setFormData] = useState<ImageGenerationInput>(defaultImageInput);
-    const [originalImages, setOriginalImages] = useState<string[]>([]);
-    const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+    const [generatedResult, setGeneratedResult] = useState<ProductImage | null>(null);
+    const [originalImageUrl, setOriginalImageUrl] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = useCallback(async () => {
+        if (formData.images.length === 0) {
+            setError('Vui lòng upload ảnh sản phẩm');
+            return;
+        }
+
+        setError(null);
+        setIsLoading(true);
         setCurrentStep('processing');
 
-        // Convert files to URLs for preview
-        const originals = formData.images.map(file => URL.createObjectURL(file));
-        setOriginalImages(originals);
+        try {
+            // Step 1: Upload the image first
+            const uploadedFile = await uploadImage(formData.images[0], 'ai-images');
+            const imageUrl = uploadedFile.url;
+            setOriginalImageUrl(getImageUrl(imageUrl));
 
-        // Simulate AI processing
-        await new Promise(resolve => setTimeout(resolve, 3000));
+            // Step 2: Generate AI image
+            const response = await productImageApi.generate({
+                originalImageUrl: imageUrl,
+                backgroundType: formData.backgroundType,
+                customBackground: formData.customBackground,
+                useLogo: formData.useLogo,
+                logoPosition: formData.logoPosition,
+                outputSize: formData.outputSize,
+                additionalNotes: formData.additionalNotes,
+                useBrandSettings: formData.useBrandSettings
+            });
 
-        // Fake generated images (using same images with different styling for demo)
-        const generated = [
-            'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80',
-            'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',
-            'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&q=80',
-        ].slice(0, formData.images.length);
-
-        setGeneratedImages(generated);
-        setCurrentStep('result');
+            if (response.success && response.data) {
+                setGeneratedResult(response.data);
+                setCurrentStep('result');
+            } else {
+                throw new Error(response.message || 'Lỗi khi tạo ảnh AI');
+            }
+        } catch (err: unknown) {
+            console.error('Generate error:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tạo ảnh AI';
+            setError(errorMessage);
+            setCurrentStep('form');
+        } finally {
+            setIsLoading(false);
+        }
     }, [formData]);
 
     const handleReset = useCallback(() => {
         setFormData(defaultImageInput);
-        setOriginalImages([]);
-        setGeneratedImages([]);
+        setGeneratedResult(null);
+        setOriginalImageUrl('');
+        setError(null);
         setCurrentStep('form');
     }, []);
 
     const handleRegenerate = useCallback(async () => {
+        if (!generatedResult?._id) {
+            setError('Không tìm thấy ảnh để tạo lại');
+            return;
+        }
+
+        setError(null);
+        setIsLoading(true);
         setCurrentStep('processing');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setCurrentStep('result');
-    }, []);
+
+        try {
+            const response = await productImageApi.regenerate(generatedResult._id);
+
+            if (response.success && response.data) {
+                setGeneratedResult(response.data);
+                setCurrentStep('result');
+            } else {
+                throw new Error(response.message || 'Lỗi khi tạo lại ảnh AI');
+            }
+        } catch (err: unknown) {
+            console.error('Regenerate error:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tạo lại ảnh AI';
+            setError(errorMessage);
+            setCurrentStep('result'); // Go back to result to show error
+        } finally {
+            setIsLoading(false);
+        }
+    }, [generatedResult]);
 
     const stepIndex = steps.findIndex(s => s.id === currentStep);
 
@@ -74,6 +125,28 @@ export default function AIImagePage() {
                     Upload ảnh sản phẩm → AI tạo bối cảnh đẹp và ghép logo thương hiệu
                 </p>
             </motion.div>
+
+            {/* Error Alert */}
+            {error && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3"
+                >
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{error}</span>
+                    <button
+                        onClick={() => setError(null)}
+                        className="ml-auto text-red-500 hover:text-red-700"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </motion.div>
+            )}
 
             {/* Step Indicator */}
             <motion.div
@@ -124,19 +197,21 @@ export default function AIImagePage() {
                     data={formData}
                     onChange={setFormData}
                     onSubmit={handleSubmit}
+                    isLoading={isLoading}
                 />
             )}
 
             {currentStep === 'processing' && (
-                <ImageProcessing imageCount={formData.images.length} />
+                <ImageProcessing imageCount={1} />
             )}
 
-            {currentStep === 'result' && (
+            {currentStep === 'result' && generatedResult && (
                 <ImageResult
-                    originalImages={originalImages}
-                    generatedImages={generatedImages}
+                    result={generatedResult}
+                    originalImageUrl={originalImageUrl}
                     onReset={handleReset}
                     onRegenerate={handleRegenerate}
+                    isRegenerating={isLoading}
                 />
             )}
         </div>

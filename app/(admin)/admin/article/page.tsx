@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { generateFakeArticle, type GeneratedArticle } from '@/lib/fakeData';
+import { uploadImage, generateAndSaveArticle, getImageUrl } from '@/lib/api';
+import toast from '@/lib/toast';
 import type { ArticleMode, ArticleFormData } from './_components';
 
 // Dynamic imports for code splitting
@@ -14,6 +15,13 @@ const GeneratingLoader = dynamic(() => import('./_components/GeneratingLoader'),
 const ArticlePreviewModal = dynamic(() => import('./_components/ArticlePreviewModal'), { ssr: false });
 
 type Step = 'mode' | 'form' | 'generating' | 'preview';
+
+interface GeneratedArticle {
+    title: string;
+    content: string;
+    hashtags: string[];
+    imageUrl?: string;
+}
 
 export default function ArticlePage() {
     const [step, setStep] = useState<Step>('mode');
@@ -31,20 +39,61 @@ export default function ArticlePage() {
     const handleFormSubmit = useCallback(async (formData: ArticleFormData) => {
         setStep('generating');
 
-        // Generate custom image URLs if manual mode
-        if (mode === 'manual' && images.length > 0) {
-            const urls = images.map(file => URL.createObjectURL(file));
-            setCustomImageUrls(urls);
+        try {
+            let uploadedImageUrl: string | undefined;
+
+            // Upload image if manual mode and has images
+            if (mode === 'manual' && images.length > 0) {
+                try {
+                    toast.loading('Đang upload ảnh...', { id: 'upload' });
+                    const uploadResult = await uploadImage(images[0], 'articles');
+                    uploadedImageUrl = uploadResult.url;
+                    setCustomImageUrls([getImageUrl(uploadResult.url)]);
+                    toast.success('Upload ảnh thành công!', { id: 'upload' });
+                } catch (uploadError) {
+                    console.error('Upload error:', uploadError);
+                    toast.error('Lỗi upload ảnh, tiếp tục tạo bài viết không có ảnh', { id: 'upload' });
+                }
+            }
+
+            // Call Gemini API to generate and save article
+            toast.loading('Đang tạo bài viết với AI...', { id: 'generate' });
+
+            const result = await generateAndSaveArticle({
+                mode: mode || 'ai_image',
+                topic: formData.topic,
+                purpose: formData.purpose,
+                wordCount: formData.wordCount,
+                description: formData.description,
+                imageUrl: uploadedImageUrl,
+                useBrandSettings: formData.useBrandSettings
+            });
+
+            // Set generated article data
+            const article: GeneratedArticle = {
+                title: result.generated.title,
+                content: result.generated.content,
+                hashtags: result.generated.hashtags || [],
+                imageUrl: result.generated.imageUrl || uploadedImageUrl
+            };
+
+            setGeneratedArticle(article);
+
+            // If AI image mode and has imageUrl, set it
+            if (mode === 'ai_image' && result.generated.imageUrl) {
+                setCustomImageUrls([result.generated.imageUrl]);
+            }
+
+            toast.success('Tạo bài viết thành công! 🎉', { id: 'generate' });
+            setStep('preview');
+            setIsModalOpen(true);
+
+        } catch (error: unknown) {
+            console.error('Generate error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Lỗi khi tạo bài viết';
+            toast.error(errorMessage, { id: 'generate' });
+            setStep('form');
         }
-
-        // Fake AI generation delay (2 seconds)
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Generate fake article
-        const article = generateFakeArticle(formData.purpose);
-        setGeneratedArticle(article);
-        setStep('preview');
-        setIsModalOpen(true);
     }, [mode, images]);
 
     const handleCloseModal = useCallback(() => {
@@ -226,7 +275,7 @@ export default function ArticlePage() {
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 article={generatedArticle}
-                customImages={mode === 'manual' ? customImageUrls : undefined}
+                customImages={customImageUrls.length > 0 ? customImageUrls : undefined}
             />
         </div>
     );

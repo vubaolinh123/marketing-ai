@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { fakeArticleList, type ArticleListItem } from '@/lib/fakeData';
+import { getArticles, deleteArticle, type Article } from '@/lib/api';
+import toast from '@/lib/toast';
 import type { FilterState } from './_components';
 
 // Dynamic imports
@@ -12,38 +13,61 @@ const ArticleFilters = dynamic(() => import('./_components/ArticleFilters'), { s
 const ArticleCard = dynamic(() => import('./_components/ArticleCard'), { ssr: false });
 const Pagination = dynamic(() => import('./_components/Pagination'), { ssr: false });
 const DeleteConfirmModal = dynamic(() => import('./_components/DeleteConfirmModal'), { ssr: false });
+const ArticleDetailModal = dynamic(() => import('./_components/ArticleDetailModal'), { ssr: false });
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 export default function ArticleListPage() {
     const [filters, setFilters] = useState<FilterState>({
         topic: '',
         purpose: '',
+        status: '',
         search: '',
     });
     const [currentPage, setCurrentPage] = useState(1);
-    const [articles, setArticles] = useState<ArticleListItem[]>(fakeArticleList);
-    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; article: ArticleListItem | null }>({
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; article: Article | null }>({
+        isOpen: false,
+        article: null,
+    });
+    const [detailModal, setDetailModal] = useState<{ isOpen: boolean; article: Article | null }>({
         isOpen: false,
         article: null,
     });
 
-    // Filter articles
-    const filteredArticles = useMemo(() => {
-        return articles.filter(article => {
-            if (filters.topic && article.topic !== filters.topic) return false;
-            if (filters.purpose && article.purpose !== filters.purpose) return false;
-            if (filters.search && !article.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
-            return true;
-        });
-    }, [articles, filters]);
+    // Fetch articles from API
+    const fetchArticles = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const params: Record<string, string | number> = {
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+            };
 
-    // Pagination
-    const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);
-    const paginatedArticles = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredArticles.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredArticles, currentPage]);
+            if (filters.topic) params.topic = filters.topic;
+            if (filters.purpose) params.purpose = filters.purpose;
+            if (filters.status) params.status = filters.status;
+            if (filters.search) params.search = filters.search;
+
+            const result = await getArticles(params);
+            setArticles(result.articles);
+            setTotalPages(result.pagination.totalPages);
+            setTotalCount(result.pagination.total);
+        } catch (error) {
+            console.error('Failed to fetch articles:', error);
+            toast.error('Không thể tải danh sách bài viết');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentPage, filters]);
+
+    // Fetch articles on mount and when filters/page change
+    useEffect(() => {
+        fetchArticles();
+    }, [fetchArticles]);
 
     // Reset to page 1 when filters change
     const handleFiltersChange = useCallback((newFilters: FilterState) => {
@@ -51,26 +75,61 @@ export default function ArticleListPage() {
         setCurrentPage(1);
     }, []);
 
+    // Open detail modal when clicking on card
+    const handleCardClick = useCallback((article: Article) => {
+        setDetailModal({ isOpen: true, article });
+    }, []);
+
     const handleEdit = useCallback((id: string) => {
         alert(`Chức năng chỉnh sửa bài viết ${id} sẽ được phát triển!`);
     }, []);
 
     const handleDelete = useCallback((id: string) => {
-        const article = articles.find(a => a.id === id);
+        const article = articles.find(a => a._id === id);
         if (article) {
             setDeleteModal({ isOpen: true, article });
         }
     }, [articles]);
 
-    const confirmDelete = useCallback(() => {
+    const confirmDelete = useCallback(async () => {
         if (deleteModal.article) {
-            setArticles(prev => prev.filter(a => a.id !== deleteModal.article?.id));
+            try {
+                await deleteArticle(deleteModal.article._id);
+                toast.success('Xóa bài viết thành công!');
+                // Refresh the list
+                fetchArticles();
+            } catch (error) {
+                console.error('Failed to delete article:', error);
+                toast.error('Không thể xóa bài viết');
+            }
             setDeleteModal({ isOpen: false, article: null });
         }
-    }, [deleteModal.article]);
+    }, [deleteModal.article, fetchArticles]);
+
+    // Loading skeleton
+    const LoadingSkeleton = () => (
+        <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+                    <div className="flex flex-col sm:flex-row">
+                        <div className="sm:w-48 h-32 bg-gray-200" />
+                        <div className="flex-1 p-4 space-y-3">
+                            <div className="flex gap-2">
+                                <div className="h-5 w-20 bg-gray-200 rounded-full" />
+                                <div className="h-5 w-24 bg-gray-200 rounded-full" />
+                            </div>
+                            <div className="h-5 w-3/4 bg-gray-200 rounded" />
+                            <div className="h-4 w-full bg-gray-200 rounded" />
+                            <div className="h-4 w-2/3 bg-gray-200 rounded" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 
     return (
-        <div className="max-w-6xl mx-auto">
+        <div className="w-[95%] max-w-[1600px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -83,7 +142,7 @@ export default function ArticleListPage() {
                             Danh sách bài viết
                         </h1>
                         <p className="text-gray-600">
-                            {filteredArticles.length} bài viết được tìm thấy
+                            {isLoading ? 'Đang tải...' : `${totalCount} bài viết được tìm thấy`}
                         </p>
                     </div>
                     <Link
@@ -105,12 +164,15 @@ export default function ArticleListPage() {
             />
 
             {/* Article List */}
-            {paginatedArticles.length > 0 ? (
+            {isLoading ? (
+                <LoadingSkeleton />
+            ) : articles.length > 0 ? (
                 <div className="space-y-4">
-                    {paginatedArticles.map((article, index) => (
+                    {articles.map((article, index) => (
                         <ArticleCard
-                            key={article.id}
+                            key={article._id}
                             article={article}
+                            onClick={handleCardClick}
                             onEdit={handleEdit}
                             onDelete={handleDelete}
                             index={index}
@@ -147,11 +209,13 @@ export default function ArticleListPage() {
             )}
 
             {/* Pagination */}
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+            {!isLoading && totalPages > 1 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
+            )}
 
             {/* Delete Confirmation Modal */}
             <DeleteConfirmModal
@@ -159,6 +223,13 @@ export default function ArticleListPage() {
                 onClose={() => setDeleteModal({ isOpen: false, article: null })}
                 onConfirm={confirmDelete}
                 title={deleteModal.article?.title}
+            />
+
+            {/* Article Detail Modal */}
+            <ArticleDetailModal
+                isOpen={detailModal.isOpen}
+                onClose={() => setDetailModal({ isOpen: false, article: null })}
+                article={detailModal.article}
             />
         </div>
     );

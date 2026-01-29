@@ -14,9 +14,10 @@ const features = [
             </svg>
         ),
         href: '/create-article',
-        color: 'from-amber-500 to-orange-500',
-        bgColor: 'bg-amber-500/10',
+        color: 'from-[#FFD700] to-[#F5C800]',
+        shadowColor: 'shadow-[#FFD700]/20',
         features: ['Chọn chủ đề & mục đích', 'Tạo ảnh AI kèm theo', 'Đăng lên Facebook tự động'],
+        number: '01',
     },
     {
         id: 'image',
@@ -28,9 +29,10 @@ const features = [
             </svg>
         ),
         href: '/create-image',
-        color: 'from-orange-500 to-red-500',
-        bgColor: 'bg-orange-500/10',
+        color: 'from-[#4A90D9] to-[#3B82F6]',
+        shadowColor: 'shadow-[#3B82F6]/20',
         features: ['Upload ảnh sản phẩm gốc', 'AI ghép logo tự động', 'Tạo background bắt mắt'],
+        number: '02',
     },
     {
         id: 'marketing',
@@ -42,9 +44,10 @@ const features = [
             </svg>
         ),
         href: '/marketing-plan',
-        color: 'from-yellow-500 to-amber-500',
-        bgColor: 'bg-yellow-500/10',
+        color: 'from-[#FFD700] to-[#E5C000]',
+        shadowColor: 'shadow-[#FFD700]/20',
         features: ['Chủ đề & ngày đăng', 'Calendar trực quan', 'Nhắc nhở tự động'],
+        number: '03',
     },
     {
         id: 'video',
@@ -56,32 +59,43 @@ const features = [
             </svg>
         ),
         href: '/video-script',
-        color: 'from-red-500 to-pink-500',
-        bgColor: 'bg-red-500/10',
+        color: 'from-[#3B82F6] to-[#1D4ED8]',
+        shadowColor: 'shadow-[#3B82F6]/20',
         features: ['Chọn tone & thời lượng', 'Có/không có người xuất hiện', 'Export kịch bản chi tiết'],
+        number: '04',
     },
 ];
 
 export default function FeaturesSection() {
     return (
-        <section id="features" className="relative py-24 lg:py-32">
-            {/* Background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--background-secondary)]/50 to-transparent" />
+        <section id="features" className="relative py-20 lg:py-28 overflow-hidden">
+            {/* Background with gradient and pattern */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#E0EFFF] via-white to-gray-50" />
+
+            {/* Decorative floating elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-20 left-10 w-20 h-20 bg-[#FFD700]/20 rounded-full blur-2xl animate-float" />
+                <div className="absolute top-40 right-20 w-32 h-32 bg-[#3B82F6]/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+                <div className="absolute bottom-40 left-1/4 w-24 h-24 bg-[#FFD700]/15 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
+                <div className="absolute bottom-20 right-1/3 w-28 h-28 bg-[#3B82F6]/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }} />
+            </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Section Header */}
-                <div className="text-center mb-16 lg:mb-20">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--color-primary-500)]/10 border border-[var(--color-primary-500)]/20 mb-6">
-                        <svg className="w-5 h-5 text-[var(--color-primary-500)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center mb-16">
+                    <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#FFD700]/20 to-[#3B82F6]/20 border border-[#FFD700]/30 mb-6 animate-fade-in">
+                        <svg className="w-5 h-5 text-[#E5C000]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        <span className="text-sm font-medium text-[var(--color-primary-500)]">Công cụ</span>
+                        <span className="text-sm font-semibold bg-gradient-to-r from-[#B29800] to-[#3B82F6] bg-clip-text text-transparent">
+                            4 Công cụ AI mạnh mẽ
+                        </span>
                     </div>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--foreground)] mb-4">
-                        Chọn công cụ bạn cần
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 animate-slide-up">
+                        Chọn công cụ <span className="text-[#FFD700]">bạn cần</span>
                     </h2>
-                    <p className="text-lg text-[var(--foreground-muted)] max-w-2xl mx-auto">
-                        4 công cụ AI hỗ trợ tạo nội dung marketing.
+                    <p className="text-lg text-gray-600 max-w-2xl mx-auto animate-slide-up stagger-1">
+                        Tự động hóa quy trình tạo nội dung marketing với sức mạnh của trí tuệ nhân tạo
                     </p>
                 </div>
 
@@ -93,60 +107,105 @@ export default function FeaturesSection() {
                                 variant="gradient"
                                 hover
                                 className={`
-                  h-full p-8
-                  group cursor-pointer
-                  animate-fade-in
-                `}
-                                style={{ animationDelay: `${index * 0.1}s` }}
+                                    h-full p-0 overflow-hidden
+                                    group cursor-pointer
+                                    animate-fade-in
+                                    bg-white border-gray-100
+                                    hover:border-transparent
+                                    hover:shadow-2xl ${feature.shadowColor}
+                                    transition-all duration-500
+                                `}
+                                style={{ animationDelay: `${index * 0.15}s` }}
                             >
                                 <CardContent className="p-0">
-                                    {/* Icon */}
-                                    <div className={`
-                    w-16 h-16 rounded-2xl mb-6
-                    bg-gradient-to-br ${feature.color}
-                    flex items-center justify-center text-white
-                    shadow-lg group-hover:shadow-xl
-                    group-hover:scale-110 transition-all duration-300
-                  `}>
-                                        {feature.icon}
-                                    </div>
+                                    {/* Top gradient bar */}
+                                    <div className={`h-1.5 bg-gradient-to-r ${feature.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
 
-                                    {/* Title & Description */}
-                                    <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3 group-hover:text-[var(--color-primary-500)] transition-colors">
-                                        {feature.title}
-                                    </h3>
-                                    <p className="text-[var(--foreground-muted)] mb-6">
-                                        {feature.description}
-                                    </p>
+                                    <div className="p-8 relative">
+                                        {/* Number badge */}
+                                        <div className="absolute top-6 right-6 text-6xl font-black text-gray-100 group-hover:text-gray-200 transition-colors select-none">
+                                            {feature.number}
+                                        </div>
 
-                                    {/* Feature List */}
-                                    <ul className="space-y-3">
-                                        {feature.features.map((item, i) => (
-                                            <li key={i} className="flex items-center gap-3 text-sm text-[var(--foreground-muted)]">
-                                                <span className={`
-                          w-5 h-5 rounded-full flex items-center justify-center
-                          bg-gradient-to-br ${feature.color} text-white
-                        `}>
-                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                </span>
-                                                {item}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                        {/* Icon */}
+                                        <div className={`
+                                            relative z-10 w-16 h-16 rounded-2xl mb-6
+                                            bg-gradient-to-br ${feature.color}
+                                            flex items-center justify-center text-white
+                                            shadow-lg group-hover:shadow-xl
+                                            group-hover:scale-110 group-hover:rotate-3
+                                            transition-all duration-500
+                                        `}>
+                                            {feature.icon}
+                                        </div>
 
-                                    {/* Arrow */}
-                                    <div className="mt-6 flex items-center gap-2 text-[var(--color-primary-500)] font-medium opacity-0 group-hover:opacity-100 translate-x-0 group-hover:translate-x-2 transition-all duration-300">
-                                        <span>Khám phá ngay</span>
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                        </svg>
+                                        {/* Title & Description */}
+                                        <h3 className="relative z-10 text-xl font-bold text-gray-900 mb-3 group-hover:text-[#B29800] transition-colors duration-300">
+                                            {feature.title}
+                                        </h3>
+                                        <p className="relative z-10 text-gray-600 mb-6 leading-relaxed">
+                                            {feature.description}
+                                        </p>
+
+                                        {/* Feature List */}
+                                        <ul className="relative z-10 space-y-3">
+                                            {feature.features.map((item, i) => (
+                                                <li
+                                                    key={i}
+                                                    className="flex items-center gap-3 text-sm text-gray-600"
+                                                    style={{ animationDelay: `${i * 0.1}s` }}
+                                                >
+                                                    <span className={`
+                                                        w-6 h-6 rounded-full flex items-center justify-center shrink-0
+                                                        bg-gradient-to-br ${feature.color} text-white
+                                                        shadow-sm group-hover:scale-110 transition-transform duration-300
+                                                    `}>
+                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </span>
+                                                    <span className="group-hover:text-gray-900 transition-colors">
+                                                        {item}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                        {/* Arrow CTA */}
+                                        <div className="relative z-10 mt-8 flex items-center gap-2 text-[#B29800] font-semibold">
+                                            <span className="opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                                                Khám phá ngay
+                                            </span>
+                                            <div className="w-10 h-10 rounded-full bg-[#FFD700]/10 flex items-center justify-center group-hover:bg-[#FFD700] transition-all duration-300">
+                                                <svg
+                                                    className="w-5 h-5 text-[#B29800] group-hover:text-gray-900 group-hover:translate-x-0.5 transition-all duration-300"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
                         </Link>
                     ))}
+                </div>
+
+                {/* Bottom CTA */}
+                <div className="mt-16 text-center animate-fade-in stagger-3">
+                    <p className="text-gray-500 mb-4">Cần hỗ trợ thêm?</p>
+                    <Link
+                        href="/login"
+                        className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[#FFD700] hover:bg-[#FFEC4D] text-gray-900 font-bold transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                    >
+                        Đăng nhập để bắt đầu
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7V17" />
+                        </svg>
+                    </Link>
                 </div>
             </div>
         </section>

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { fakeImageList, ImageListItem } from '@/lib/fakeData/image';
+import { productImageApi, ProductImage, getImageUrl } from '@/lib/api';
 import { ImageFilterState } from './_components/ImageFilters';
 
 // Dynamic imports
@@ -19,66 +19,86 @@ export default function ImageListPage() {
     const [filters, setFilters] = useState<ImageFilterState>({
         search: '',
         backgroundType: '',
-        outputSize: '',
+        status: '',
     });
     const [currentPage, setCurrentPage] = useState(1);
-    const [images, setImages] = useState<ImageListItem[]>(fakeImageList);
-    const [previewImage, setPreviewImage] = useState<ImageListItem | null>(null);
-    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; image: ImageListItem | null }>({
+    const [images, setImages] = useState<ProductImage[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        totalPages: 1,
+        total: 0
+    });
+    const [previewImage, setPreviewImage] = useState<ProductImage | null>(null);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; image: ProductImage | null }>({
         isOpen: false,
         image: null,
     });
 
-    // Filtered images
-    const filteredImages = useMemo(() => {
-        return images.filter(image => {
-            if (filters.search) {
-                const searchLower = filters.search.toLowerCase();
-                if (!image.name.toLowerCase().includes(searchLower)) {
-                    return false;
-                }
-            }
-            if (filters.backgroundType && image.backgroundType !== filters.backgroundType) {
-                return false;
-            }
-            if (filters.outputSize && image.outputSize !== filters.outputSize) {
-                return false;
-            }
-            return true;
-        });
-    }, [images, filters]);
+    // Fetch images from API
+    const fetchImages = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await productImageApi.getAll({
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+                search: filters.search || undefined,
+                backgroundType: filters.backgroundType || undefined,
+                status: filters.status || undefined,
+            });
 
-    // Paginated images
-    const paginatedImages = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredImages.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredImages, currentPage]);
+            if (response.success) {
+                setImages(response.data);
+                setPagination({
+                    page: response.pagination.page,
+                    totalPages: response.pagination.totalPages,
+                    total: response.pagination.total
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch images:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentPage, filters]);
 
-    const totalPages = Math.ceil(filteredImages.length / ITEMS_PER_PAGE);
+    // Fetch on mount and when filters/page change
+    useEffect(() => {
+        fetchImages();
+    }, [fetchImages]);
 
     const handleFiltersChange = useCallback((newFilters: ImageFilterState) => {
         setFilters(newFilters);
-        setCurrentPage(1);
+        setCurrentPage(1); // Reset to first page on filter change
     }, []);
 
-    const handleView = useCallback((image: ImageListItem) => {
+    const handleView = useCallback((image: ProductImage) => {
         setPreviewImage(image);
     }, []);
 
-    const handleDownload = useCallback((image: ImageListItem) => {
-        window.open(image.generatedUrl, '_blank');
+    const handleDownload = useCallback((image: ProductImage) => {
+        if (image.generatedImageUrl) {
+            window.open(getImageUrl(image.generatedImageUrl), '_blank');
+        }
     }, []);
 
-    const handleDelete = useCallback((image: ImageListItem) => {
+    const handleDelete = useCallback((image: ProductImage) => {
         setDeleteModal({ isOpen: true, image });
     }, []);
 
-    const confirmDelete = useCallback(() => {
+    const confirmDelete = useCallback(async () => {
         if (deleteModal.image) {
-            setImages(prev => prev.filter(img => img.id !== deleteModal.image!.id));
-            setDeleteModal({ isOpen: false, image: null });
+            try {
+                await productImageApi.delete(deleteModal.image._id);
+                // Refresh the list
+                fetchImages();
+            } catch (error) {
+                console.error('Failed to delete image:', error);
+            } finally {
+                setDeleteModal({ isOpen: false, image: null });
+            }
         }
-    }, [deleteModal.image]);
+    }, [deleteModal.image, fetchImages]);
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -90,19 +110,29 @@ export default function ImageListPage() {
             >
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Xem ảnh</h1>
                 <p className="text-gray-600">
-                    Danh sách {filteredImages.length} ảnh đã tạo
+                    Danh sách {pagination.total} ảnh đã tạo
                 </p>
             </motion.div>
 
             {/* Filters */}
             <ImageFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-            {/* Image Grid */}
-            {paginatedImages.length > 0 ? (
+            {/* Loading State */}
+            {isLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-                    {paginatedImages.map((image, index) => (
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className="aspect-square rounded-xl bg-gray-200 animate-pulse"
+                        />
+                    ))}
+                </div>
+            ) : images.length > 0 ? (
+                /* Image Grid */
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                    {images.map((image, index) => (
                         <ImageCard
-                            key={image.id}
+                            key={image._id}
                             image={image}
                             onView={handleView}
                             onDownload={handleDownload}
@@ -112,6 +142,7 @@ export default function ImageListPage() {
                     ))}
                 </div>
             ) : (
+                /* Empty State */
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -126,10 +157,10 @@ export default function ImageListPage() {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {pagination.totalPages > 1 && (
                 <Pagination
                     currentPage={currentPage}
-                    totalPages={totalPages}
+                    totalPages={pagination.totalPages}
                     onPageChange={setCurrentPage}
                 />
             )}
@@ -146,7 +177,7 @@ export default function ImageListPage() {
             {/* Delete Confirm Modal */}
             <DeleteConfirmModal
                 isOpen={deleteModal.isOpen}
-                title={deleteModal.image?.name || ''}
+                title={deleteModal.image?.title || ''}
                 onConfirm={confirmDelete}
                 onClose={() => setDeleteModal({ isOpen: false, image: null })}
             />

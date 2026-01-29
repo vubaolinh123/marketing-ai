@@ -1,17 +1,24 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { fakeScriptList, type ScriptListItem } from '@/lib/fakeData';
-import type { ScriptFilterState } from './_components';
+import { videoScriptApi, VideoScriptListItem, VideoScript } from '@/lib/api';
+// ScriptFilterState type
+interface ScriptFilterState {
+    search: string;
+    duration: string;
+    size: string;
+}
+
 
 // Dynamic imports
 const ScriptFilters = dynamic(() => import('./_components/ScriptFilters'), { ssr: false });
 const ScriptCard = dynamic(() => import('./_components/ScriptCard'), { ssr: false });
 const Pagination = dynamic(() => import('../../article/list/_components/Pagination'), { ssr: false });
 const DeleteConfirmModal = dynamic(() => import('../../article/list/_components/DeleteConfirmModal'), { ssr: false });
+const ScriptViewModal = dynamic(() => import('./_components/ScriptViewModal'), { ssr: false });
 
 const ITEMS_PER_PAGE = 12;
 
@@ -22,34 +29,48 @@ export default function VideoScriptListPage() {
         size: '',
     });
     const [currentPage, setCurrentPage] = useState(1);
-    const [scripts, setScripts] = useState<ScriptListItem[]>(fakeScriptList);
-    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; script: ScriptListItem | null }>({
+    const [scripts, setScripts] = useState<VideoScriptListItem[]>([]);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; script: VideoScriptListItem | null }>({
+        isOpen: false,
+        script: null,
+    });
+    const [viewModal, setViewModal] = useState<{ isOpen: boolean; script: VideoScript | null }>({
         isOpen: false,
         script: null,
     });
 
-    // Filter scripts
-    const filteredScripts = useMemo(() => {
-        return scripts.filter(script => {
-            if (filters.duration && script.duration !== filters.duration) return false;
-            if (filters.size && script.size !== filters.size) return false;
-            if (filters.search) {
-                const searchLower = filters.search.toLowerCase();
-                if (
-                    !script.customerName.toLowerCase().includes(searchLower) &&
-                    !script.title.toLowerCase().includes(searchLower)
-                ) return false;
+    // Fetch scripts from API
+    const fetchScripts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await videoScriptApi.getAll({
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+                search: filters.search,
+                duration: filters.duration,
+                size: filters.size
+            });
+            if (response.success) {
+                setScripts(response.data);
+                setTotal(response.pagination.total);
             }
-            return true;
-        });
-    }, [scripts, filters]);
+        } catch (error) {
+            console.error('Error fetching scripts:', error);
+            console.error('Lỗi khi tải danh sách kịch bản');
+        } finally {
+            setLoading(false);
+        }
+    }, [currentPage, filters]);
 
-    // Pagination
-    const totalPages = Math.ceil(filteredScripts.length / ITEMS_PER_PAGE);
-    const paginatedScripts = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredScripts.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredScripts, currentPage]);
+    // Fetch on mount
+    useEffect(() => {
+        fetchScripts();
+    }, [fetchScripts]);
+
+    // Total pages calculation
+    const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
     // Reset to page 1 when filters change
     const handleFiltersChange = useCallback((newFilters: ScriptFilterState) => {
@@ -57,26 +78,41 @@ export default function VideoScriptListPage() {
         setCurrentPage(1);
     }, []);
 
-    const handleView = useCallback((id: string) => {
-        alert(`Xem chi tiết kịch bản ${id} - Tính năng đang phát triển!`);
+    const handleView = useCallback(async (id: string) => {
+        try {
+            const response = await videoScriptApi.getById(id);
+            if (response.success && response.data) {
+                setViewModal({ isOpen: true, script: response.data });
+            }
+        } catch (error) {
+            console.error('Error fetching script:', error);
+            console.error('Lỗi khi tải kịch bản');
+        }
     }, []);
 
     const handleDelete = useCallback((id: string) => {
-        const script = scripts.find(s => s.id === id);
+        const script = scripts.find(s => s._id === id);
         if (script) {
             setDeleteModal({ isOpen: true, script });
         }
     }, [scripts]);
 
-    const confirmDelete = useCallback(() => {
+    const confirmDelete = useCallback(async () => {
         if (deleteModal.script) {
-            setScripts(prev => prev.filter(s => s.id !== deleteModal.script?.id));
+            try {
+                await videoScriptApi.delete(deleteModal.script._id);
+                setScripts(prev => prev.filter(s => s._id !== deleteModal.script?._id));
+                console.log('Đã xóa kịch bản');
+            } catch (error) {
+                console.error('Delete error:', error);
+                console.error('Lỗi khi xóa kịch bản');
+            }
             setDeleteModal({ isOpen: false, script: null });
         }
     }, [deleteModal.script]);
 
     return (
-        <div className="max-w-6xl mx-auto">
+        <div className="w-[95%] max-w-[1600px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -89,7 +125,7 @@ export default function VideoScriptListPage() {
                             Danh sách kịch bản
                         </h1>
                         <p className="text-gray-600">
-                            {filteredScripts.length} kịch bản được tìm thấy
+                            {loading ? 'Đang tải...' : `${total} kịch bản được tìm thấy`}
                         </p>
                     </div>
                     <Link
@@ -110,13 +146,27 @@ export default function VideoScriptListPage() {
                 onFiltersChange={handleFiltersChange}
             />
 
-            {/* Script Grid */}
-            {paginatedScripts.length > 0 ? (
+            {/* Loading State */}
+            {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {paginatedScripts.map((script, index) => (
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="animate-pulse bg-gray-100 rounded-2xl h-48" />
+                    ))}
+                </div>
+            ) : scripts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {scripts.map((script, index) => (
                         <ScriptCard
-                            key={script.id}
-                            script={script}
+                            key={script._id}
+                            script={{
+                                id: script._id,
+                                customerName: '',
+                                title: script.title,
+                                duration: script.duration,
+                                size: script.size,
+                                sceneCount: script.sceneCount,
+                                createdAt: script.createdAt
+                            }}
                             onView={handleView}
                             onDelete={handleDelete}
                             index={index}
@@ -165,6 +215,13 @@ export default function VideoScriptListPage() {
                 onClose={() => setDeleteModal({ isOpen: false, script: null })}
                 onConfirm={confirmDelete}
                 title={deleteModal.script?.title}
+            />
+
+            {/* View Script Modal */}
+            <ScriptViewModal
+                isOpen={viewModal.isOpen}
+                script={viewModal.script}
+                onClose={() => setViewModal({ isOpen: false, script: null })}
             />
         </div>
     );

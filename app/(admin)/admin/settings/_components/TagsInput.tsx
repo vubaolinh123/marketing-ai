@@ -11,7 +11,7 @@ interface TagsInputProps {
     disabled?: boolean;
 }
 
-export default function TagsInput({ value, onChange, placeholder = 'Nhập và Enter...', disabled }: TagsInputProps) {
+export default function TagsInput({ value = [], onChange, placeholder = 'Nhập và Enter...', disabled }: TagsInputProps) {
     const [inputValue, setInputValue] = useState('');
 
     const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {

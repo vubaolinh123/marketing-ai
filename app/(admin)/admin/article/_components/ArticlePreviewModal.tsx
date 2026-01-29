@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui';
+import { getImageUrl } from '@/lib/api';
 import type { GeneratedArticle } from '@/lib/fakeData';
 
 interface ArticlePreviewModalProps {
@@ -22,10 +23,18 @@ export default function ArticlePreviewModal({
 
     if (!article) return null;
 
+    // Transform image URLs to include backend base URL
+    const transformImageUrl = (url: string) => {
+        // If already a full URL (starts with http), return as-is
+        if (url.startsWith('http')) return url;
+        // Otherwise, prepend backend URL
+        return getImageUrl(url);
+    };
+
     const imagesToShow = customImages && customImages.length > 0
-        ? customImages
+        ? customImages.map(transformImageUrl)
         : article.imageUrl
-            ? [article.imageUrl]
+            ? [transformImageUrl(article.imageUrl)]
             : [];
 
     const handleCopy = async () => {

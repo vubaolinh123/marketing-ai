@@ -1,10 +1,11 @@
 // Fake data for Video Script AI generation
 
 export const durationOptions = [
-    { value: '15s', label: '15 giây' },
-    { value: '30s', label: '30 giây' },
-    { value: '1p', label: '1 phút' },
-    { value: '2p', label: '2 phút' },
+    { value: '30 giây', label: '30 giây' },
+    { value: '1 phút', label: '1 phút' },
+    { value: '2 phút', label: '2 phút' },
+    { value: '3 phút', label: '3 phút' },
+    { value: '5 phút', label: '5 phút' },
 ];
 
 export const sizeOptions = [
@@ -168,8 +169,8 @@ export interface ScriptListItem {
     duration: string;
     size: string;
     sceneCount: number;
-    summary: string;
-    createdAt: Date;
+    summary?: string;
+    createdAt: Date | string;
 }
 
 // Generate fake script list
