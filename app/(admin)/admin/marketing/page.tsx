@@ -4,13 +4,14 @@ import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { showSuccess, showError } from '@/lib/toast';
 import {
     MarketingPlanInput,
     MarketingPlanResult,
     PlanPost,
     defaultPlanInput,
-    generateFakePlan,
 } from '@/lib/fakeData/marketing';
+import { generateMarketingPlan, MarketingPlan } from '@/lib/api/marketingPlan.api';
 
 // Dynamic imports
 const MarketingPlanForm = dynamic(() => import('./_components/MarketingPlanForm'), { ssr: false });
@@ -26,23 +27,81 @@ const steps = [
     { id: 'result', label: 'Xem kế hoạch' },
 ];
 
+// Convert API MarketingPlan to frontend MarketingPlanResult format
+function convertApiToResult(apiPlan: MarketingPlan): MarketingPlanResult {
+    return {
+        id: apiPlan._id || apiPlan.id || `plan-${Date.now()}`,
+        campaignName: apiPlan.campaignName,
+        startDate: new Date(apiPlan.startDate),
+        endDate: new Date(apiPlan.endDate),
+        posts: apiPlan.posts.map((post, index) => ({
+            id: post._id || `post-${index}`,
+            date: new Date(post.date),
+            time: post.time,
+            topic: post.topic,
+            channel: post.channel,
+            status: post.status,
+            contentIdea: post.contentIdea,
+            purpose: post.purpose,
+            postType: post.postType,
+            suggestedHashtags: post.suggestedHashtags,
+        })),
+        totalPosts: apiPlan.totalPosts,
+        createdAt: new Date(apiPlan.createdAt),
+    };
+}
+
 export default function MarketingPlanPage() {
     const [currentStep, setCurrentStep] = useState<Step>('form');
     const [formData, setFormData] = useState<MarketingPlanInput>(defaultPlanInput);
     const [planResult, setPlanResult] = useState<MarketingPlanResult | null>(null);
     const [selectedDay, setSelectedDay] = useState<{ date: Date; posts: PlanPost[] } | null>(null);
+    const [useBrandSettings, setUseBrandSettings] = useState(false);
 
     const handleSubmit = useCallback(async () => {
         setCurrentStep('processing');
 
-        // Simulate AI processing
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        try {
+            // Log request for debugging
+            console.log('🚀 Generating marketing plan with data:', {
+                ...formData,
+                useBrandSettings
+            });
 
-        // Generate fake plan
-        const result = generateFakePlan(formData);
-        setPlanResult(result);
-        setCurrentStep('result');
-    }, [formData]);
+            // Call real API
+            const result = await generateMarketingPlan({
+                ...formData,
+                useBrandSettings
+            });
+
+            console.log('✅ Marketing plan generated:', result);
+
+            // Convert API response to frontend format
+            const planResult = convertApiToResult(result);
+            setPlanResult(planResult);
+            setCurrentStep('result');
+            showSuccess('Tạo kế hoạch marketing thành công!');
+        } catch (error: unknown) {
+            console.error('Error generating marketing plan:', error);
+            setCurrentStep('form');
+
+            // Handle different error types
+            let errorMessage = 'Có lỗi xảy ra khi tạo kế hoạch';
+
+            if (error && typeof error === 'object') {
+                const err = error as { statusCode?: number; message?: string };
+                if (err.statusCode === 401) {
+                    errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+                } else if (err.statusCode === undefined) {
+                    errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra lại.';
+                } else if (err.message) {
+                    errorMessage = err.message;
+                }
+            }
+
+            showError(errorMessage);
+        }
+    }, [formData, useBrandSettings]);
 
     const handleReset = useCallback(() => {
         setFormData(defaultPlanInput);
@@ -57,7 +116,7 @@ export default function MarketingPlanPage() {
     const stepIndex = steps.findIndex(s => s.id === currentStep);
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="w-[90%] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -119,6 +178,8 @@ export default function MarketingPlanPage() {
                     data={formData}
                     onChange={setFormData}
                     onSubmit={handleSubmit}
+                    useBrandSettings={useBrandSettings}
+                    onBrandSettingsChange={setUseBrandSettings}
                 />
             )}
 
@@ -145,3 +206,4 @@ export default function MarketingPlanPage() {
         </div>
     );
 }
+

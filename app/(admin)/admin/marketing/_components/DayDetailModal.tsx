@@ -56,6 +56,20 @@ export default function DayDetailModal({ date, posts, onClose }: DayDetailModalP
                     <div className="p-4 max-h-[60vh] overflow-y-auto space-y-3">
                         {posts.map((post, index) => {
                             const channelInfo = getChannelInfo(post.channel);
+                            const postTypeLabels: Record<string, string> = {
+                                image: '📷 Ảnh',
+                                video: '🎬 Video',
+                                story: '📱 Story',
+                                blog: '📝 Blog',
+                                reel: '🎵 Reel'
+                            };
+                            const purposeLabels: Record<string, string> = {
+                                engagement: 'Tăng tương tác',
+                                sales: 'Bán hàng',
+                                awareness: 'Nhận diện',
+                                traffic: 'Traffic',
+                                leads: 'Thu thập leads'
+                            };
 
                             return (
                                 <motion.div
@@ -66,21 +80,53 @@ export default function DayDetailModal({ date, posts, onClose }: DayDetailModalP
                                     className="bg-gray-50 rounded-xl p-4 border border-gray-100"
                                 >
                                     <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xl">
+                                        <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-xl flex-shrink-0">
                                             {channelInfo.icon}
                                         </div>
-                                        <div className="flex-1">
+                                        <div className="flex-1 min-w-0">
                                             <p className="font-medium text-gray-900">{post.topic}</p>
-                                            <div className="flex items-center gap-3 mt-1">
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
                                                 <span className="text-sm text-gray-500">
                                                     🕐 {post.time}
                                                 </span>
                                                 <span className="text-sm text-gray-500">
                                                     {channelInfo.label}
                                                 </span>
+                                                {post.postType && (
+                                                    <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                                        {postTypeLabels[post.postType] || post.postType}
+                                                    </span>
+                                                )}
+                                                {post.purpose && (
+                                                    <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                                                        {purposeLabels[post.purpose] || post.purpose}
+                                                    </span>
+                                                )}
                                             </div>
+
+                                            {/* AI Content Idea */}
+                                            {post.contentIdea && (
+                                                <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg">
+                                                    <p className="text-xs text-amber-600 font-medium mb-1">💡 Ý tưởng nội dung:</p>
+                                                    <p className="text-sm text-gray-700">{post.contentIdea}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Hashtags */}
+                                            {post.suggestedHashtags && post.suggestedHashtags.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                    {post.suggestedHashtags.slice(0, 5).map((tag, i) => (
+                                                        <span
+                                                            key={i}
+                                                            className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full"
+                                                        >
+                                                            #{tag.replace('#', '')}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                                        <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium flex-shrink-0">
                                             Đã lên lịch
                                         </span>
                                     </div>

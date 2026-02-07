@@ -1,18 +1,45 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { fakePlanList, PlanListItem } from '@/lib/fakeData/marketing';
+import { getMarketingPlans, deleteMarketingPlan, MarketingPlanListItem } from '@/lib/api/marketingPlan.api';
 import { PlanFilterState } from './_components/PlanFilters';
+import { showSuccess, showError } from '@/lib/toast';
 
 // Dynamic imports
 const PlanFilters = dynamic(() => import('./_components/PlanFilters'), { ssr: false });
 const PlanCard = dynamic(() => import('./_components/PlanCard'), { ssr: false });
 const Pagination = dynamic(() => import('@/app/(admin)/admin/article/list/_components/Pagination'), { ssr: false });
 const DeleteConfirmModal = dynamic(() => import('@/app/(admin)/admin/article/list/_components/DeleteConfirmModal'), { ssr: false });
+const PlanDetailModal = dynamic(() => import('./_components/PlanDetailModal'), { ssr: false });
 
 const ITEMS_PER_PAGE = 6;
+
+// Convert API response to PlanListItem format for components
+interface PlanListItem {
+    id: string;
+    campaignName: string;
+    startDate: Date;
+    endDate: Date;
+    totalPosts: number;
+    channels: string[];
+    status: 'active' | 'completed' | 'draft';
+    createdAt: Date;
+}
+
+function convertApiToListItem(apiPlan: MarketingPlanListItem): PlanListItem {
+    return {
+        id: apiPlan._id,
+        campaignName: apiPlan.campaignName,
+        startDate: new Date(apiPlan.startDate),
+        endDate: new Date(apiPlan.endDate),
+        totalPosts: apiPlan.totalPosts,
+        channels: apiPlan.channels,
+        status: apiPlan.status,
+        createdAt: new Date(apiPlan.createdAt),
+    };
+}
 
 export default function MarketingListPage() {
     const [filters, setFilters] = useState<PlanFilterState>({
@@ -21,38 +48,60 @@ export default function MarketingListPage() {
         channel: '',
     });
     const [currentPage, setCurrentPage] = useState(1);
-    const [plans, setPlans] = useState<PlanListItem[]>(fakePlanList);
+    const [plans, setPlans] = useState<PlanListItem[]>([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; plan: PlanListItem | null }>({
         isOpen: false,
         plan: null,
     });
+    const [viewModal, setViewModal] = useState<{ isOpen: boolean; planId: string | null }>({
+        isOpen: false,
+        planId: null,
+    });
 
-    // Filtered plans
-    const filteredPlans = useMemo(() => {
-        return plans.filter(plan => {
-            if (filters.search) {
-                const searchLower = filters.search.toLowerCase();
-                if (!plan.campaignName.toLowerCase().includes(searchLower)) {
+    // Fetch plans from API
+    const fetchPlans = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const result = await getMarketingPlans({
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+                status: filters.status || undefined,
+            });
+
+            const convertedPlans = result.plans.map(convertApiToListItem);
+
+            // Client-side search filter (since backend may not support it)
+            const filteredPlans = convertedPlans.filter(plan => {
+                if (filters.search) {
+                    const searchLower = filters.search.toLowerCase();
+                    if (!plan.campaignName.toLowerCase().includes(searchLower)) {
+                        return false;
+                    }
+                }
+                if (filters.channel && !plan.channels.includes(filters.channel)) {
                     return false;
                 }
-            }
-            if (filters.status && plan.status !== filters.status) {
-                return false;
-            }
-            if (filters.channel && !plan.channels.includes(filters.channel)) {
-                return false;
-            }
-            return true;
-        });
-    }, [plans, filters]);
+                return true;
+            });
 
-    // Paginated plans
-    const paginatedPlans = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredPlans.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredPlans, currentPage]);
+            setPlans(filteredPlans);
+            setTotalPages(result.pagination.totalPages);
+            setTotalItems(result.pagination.total);
+        } catch (error) {
+            console.error('Error fetching plans:', error);
+            showError('Không thể tải danh sách kế hoạch');
+            setPlans([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [currentPage, filters.status, filters.search, filters.channel]);
 
-    const totalPages = Math.ceil(filteredPlans.length / ITEMS_PER_PAGE);
+    useEffect(() => {
+        fetchPlans();
+    }, [fetchPlans]);
 
     const handleFiltersChange = useCallback((newFilters: PlanFilterState) => {
         setFilters(newFilters);
@@ -60,34 +109,36 @@ export default function MarketingListPage() {
     }, []);
 
     const handleView = useCallback((plan: PlanListItem) => {
-        // TODO: Navigate to plan detail
-        alert(`Xem kế hoạch: ${plan.campaignName}`);
+        // Open plan detail modal
+        setViewModal({ isOpen: true, planId: plan.id });
     }, []);
 
     const handleDuplicate = useCallback((plan: PlanListItem) => {
-        const duplicated: PlanListItem = {
-            ...plan,
-            id: `plan-${Date.now()}`,
-            campaignName: `${plan.campaignName} (Copy)`,
-            status: 'draft',
-            createdAt: new Date(),
-        };
-        setPlans(prev => [duplicated, ...prev]);
+        // TODO: Implement duplicate via API
+        showSuccess(`Chức năng sao chép đang được phát triển`);
     }, []);
 
     const handleDelete = useCallback((plan: PlanListItem) => {
         setDeleteModal({ isOpen: true, plan });
     }, []);
 
-    const confirmDelete = useCallback(() => {
+    const confirmDelete = useCallback(async () => {
         if (deleteModal.plan) {
-            setPlans(prev => prev.filter(p => p.id !== deleteModal.plan!.id));
-            setDeleteModal({ isOpen: false, plan: null });
+            try {
+                await deleteMarketingPlan(deleteModal.plan.id);
+                showSuccess('Đã xóa kế hoạch thành công');
+                setDeleteModal({ isOpen: false, plan: null });
+                // Refresh list
+                fetchPlans();
+            } catch (error) {
+                console.error('Error deleting plan:', error);
+                showError('Không thể xóa kế hoạch');
+            }
         }
-    }, [deleteModal.plan]);
+    }, [deleteModal.plan, fetchPlans]);
 
     return (
-        <div className="w-[95%] max-w-[1600px] mx-auto">
+        <div className="w-[90%] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -96,17 +147,27 @@ export default function MarketingListPage() {
             >
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Xem kế hoạch</h1>
                 <p className="text-gray-600">
-                    Danh sách {filteredPlans.length} kế hoạch marketing
+                    {isLoading ? 'Đang tải...' : `Danh sách ${totalItems} kế hoạch marketing`}
                 </p>
             </motion.div>
 
             {/* Filters */}
             <PlanFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-            {/* Plans Grid */}
-            {paginatedPlans.length > 0 ? (
+            {/* Loading State */}
+            {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    {paginatedPlans.map((plan, index) => (
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
+                            <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                            <div className="h-4 bg-gray-100 rounded w-1/2 mb-2"></div>
+                            <div className="h-4 bg-gray-100 rounded w-1/3"></div>
+                        </div>
+                    ))}
+                </div>
+            ) : plans.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {plans.map((plan, index) => (
                         <PlanCard
                             key={plan.id}
                             plan={plan}
@@ -146,6 +207,13 @@ export default function MarketingListPage() {
                 title={deleteModal.plan?.campaignName || ''}
                 onConfirm={confirmDelete}
                 onClose={() => setDeleteModal({ isOpen: false, plan: null })}
+            />
+
+            {/* Plan Detail Modal */}
+            <PlanDetailModal
+                isOpen={viewModal.isOpen}
+                planId={viewModal.planId}
+                onClose={() => setViewModal({ isOpen: false, planId: null })}
             />
         </div>
     );

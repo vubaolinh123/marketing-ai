@@ -19,9 +19,11 @@ interface MarketingPlanFormProps {
     onChange: (data: MarketingPlanInput) => void;
     onSubmit: () => void;
     isLoading?: boolean;
+    useBrandSettings?: boolean;
+    onBrandSettingsChange?: (value: boolean) => void;
 }
 
-export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading }: MarketingPlanFormProps) {
+export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading, useBrandSettings, onBrandSettingsChange }: MarketingPlanFormProps) {
     const canSubmit = data.campaignName && data.startDate && data.endDate && data.topics.length > 0 && data.channels.length > 0;
 
     const toggleArrayItem = (field: 'postTimes' | 'goals' | 'channels', value: string) => {
@@ -242,6 +244,35 @@ export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading 
                             ))}
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* AI Settings Toggle */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center text-sm">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                            </span>
+                            Áp dụng AI Settings
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1 ml-10">
+                            Sử dụng thông tin thương hiệu đã cấu hình để tạo nội dung phù hợp hơn
+                        </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={useBrandSettings || false}
+                            onChange={(e) => onBrandSettingsChange?.(e.target.checked)}
+                            disabled={isLoading}
+                            className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F59E0B]"></div>
+                    </label>
                 </div>
             </div>
 

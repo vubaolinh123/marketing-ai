@@ -48,6 +48,11 @@ export interface PlanPost {
     topic: string;
     channel: string;
     status: 'scheduled' | 'draft' | 'published';
+    // AI-enhanced fields
+    contentIdea?: string;
+    purpose?: string;
+    postType?: 'image' | 'video' | 'story' | 'blog' | 'reel';
+    suggestedHashtags?: string[];
 }
 
 export interface MarketingPlanResult {

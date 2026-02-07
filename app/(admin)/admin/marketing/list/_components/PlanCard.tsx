@@ -2,7 +2,19 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { PlanListItem, channelOptions, statusOptions } from '@/lib/fakeData/marketing';
+import { channelOptions, statusOptions } from '@/lib/fakeData/marketing';
+
+// Local interface for PlanListItem to work with both fake and real API data
+interface PlanListItem {
+    id: string;
+    campaignName: string;
+    startDate: Date;
+    endDate: Date;
+    totalPosts: number;
+    channels: string[];
+    status: 'active' | 'completed' | 'draft';
+    createdAt: Date;
+}
 
 interface PlanCardProps {
     plan: PlanListItem;

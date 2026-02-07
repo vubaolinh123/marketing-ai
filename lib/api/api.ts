@@ -55,6 +55,7 @@ api.interceptors.request.use(
         // Log request in development
         if (process.env.NODE_ENV === 'development') {
             console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`);
+            console.log(`   Token: ${token ? 'Yes (' + token.substring(0, 20) + '...)' : 'No'}`);
         }
 
         return config;
@@ -77,9 +78,15 @@ api.interceptors.response.use(
         const status = error.response?.status;
         const message = error.response?.data?.message || 'Đã xảy ra lỗi';
 
-        // Log error in development
+        // Log error in development - more detailed
         if (process.env.NODE_ENV === 'development') {
             console.error(`❌ Error ${status}:`, message);
+            console.error('   Full error:', {
+                code: error.code,
+                message: error.message,
+                response: error.response?.data,
+                request: error.request ? 'Request was made but no response received' : 'Request setup error'
+            });
         }
 
         // Handle specific error codes
