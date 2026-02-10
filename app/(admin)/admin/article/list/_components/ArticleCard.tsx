@@ -24,8 +24,14 @@ export default function ArticleCard({ article, onClick, onEdit, onDelete, index 
         }).format(new Date(date));
     };
 
+    const articleImages = article.imageUrls && article.imageUrls.length > 0
+        ? article.imageUrls
+        : article.imageUrl
+            ? [article.imageUrl]
+            : [];
+
     // Transform image URL to include backend base URL
-    const imageUrl = article.imageUrl ? getImageUrl(article.imageUrl) : null;
+    const imageUrl = articleImages[0] ? getImageUrl(articleImages[0]) : null;
 
     return (
         <motion.div
@@ -39,11 +45,35 @@ export default function ArticleCard({ article, onClick, onEdit, onDelete, index 
                 {/* Image */}
                 <div className="sm:w-48 h-32 sm:h-auto flex-shrink-0 bg-gray-100">
                     {imageUrl ? (
-                        <img
-                            src={imageUrl}
-                            alt={article.title}
-                            className="w-full h-full object-cover"
-                        />
+                        <div className="relative w-full h-full">
+                            <img
+                                src={imageUrl}
+                                alt={article.title}
+                                className="w-full h-full object-cover"
+                            />
+                            {articleImages.length > 1 && (
+                                <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-white text-[10px] font-medium">
+                                    {articleImages.length} ảnh
+                                </div>
+                            )}
+                            {articleImages.length > 1 && (
+                                <div className="absolute bottom-2 left-2 right-2 flex gap-1">
+                                    {articleImages.slice(0, 3).map((img, idx) => (
+                                        <img
+                                            key={idx}
+                                            src={getImageUrl(img)}
+                                            alt={`thumb-${idx + 1}`}
+                                            className="w-8 h-8 rounded object-cover border border-white/70"
+                                        />
+                                    ))}
+                                    {articleImages.length > 3 && (
+                                        <div className="w-8 h-8 rounded bg-black/60 text-white text-[10px] flex items-center justify-center border border-white/70">
+                                            +{articleImages.length - 3}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                             <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,6 +99,11 @@ export default function ArticleCard({ article, onClick, onEdit, onDelete, index 
                             }`}>
                             {article.status === 'published' ? '✅ Đã xuất bản' : '📝 Nháp'}
                         </span>
+                        {articleImages.length > 1 && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                {articleImages.length} ảnh
+                            </span>
+                        )}
                     </div>
 
                     <h3 className="font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-[#F59E0B] transition-colors">

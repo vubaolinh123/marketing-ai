@@ -5,21 +5,38 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { ProductImage, getImageUrl } from '@/lib/api';
+import { getCameraAngleLabel } from '@/lib/fakeData/image';
 
 interface ImageResultProps {
     result: ProductImage;
     originalImageUrl: string;
+    selectedAngles: string[];
     onReset: () => void;
     onRegenerate: () => void;
     isRegenerating?: boolean;
 }
 
-export default function ImageResult({ result, originalImageUrl, onReset, onRegenerate, isRegenerating }: ImageResultProps) {
+export default function ImageResult({ result, originalImageUrl, selectedAngles, onReset, onRegenerate, isRegenerating }: ImageResultProps) {
     const [viewMode, setViewMode] = useState<'compare' | 'full'>('compare');
+    const [activeAngle, setActiveAngle] = useState<string>(selectedAngles[0] || 'wide');
 
-    const generatedUrl = result.generatedImageUrl ? getImageUrl(result.generatedImageUrl) : '';
+    const normalizedGeneratedImages = result.generatedImages && result.generatedImages.length > 0
+        ? result.generatedImages
+        : [{
+            angle: selectedAngles[0] || 'wide',
+            imageUrl: result.generatedImageUrl || '',
+            status: result.status,
+            errorMessage: result.errorMessage
+        }];
+
+    const generatedByAngle = normalizedGeneratedImages.find((item) => item.angle === activeAngle)
+        || normalizedGeneratedImages[0];
+
+    const generatedUrl = generatedByAngle?.imageUrl ? getImageUrl(generatedByAngle.imageUrl) : '';
+    const successfulCount = normalizedGeneratedImages.filter(item => item.imageUrl && item.status !== 'failed').length;
     const isProcessing = result.status === 'processing';
-    const isFailed = result.status === 'failed';
+    const hasPartialFailure = normalizedGeneratedImages.some(item => item.status === 'failed');
+    const isFailed = result.status === 'failed' && successfulCount === 0;
 
     return (
         <motion.div
@@ -34,7 +51,10 @@ export default function ImageResult({ result, originalImageUrl, onReset, onRegen
                     <p className="text-gray-500">
                         {isProcessing ? 'Đang xử lý...' :
                             isFailed ? 'Lỗi tạo ảnh' :
-                                'Đã tạo ảnh AI thành công'}
+                                hasPartialFailure
+                                    ? `Đã tạo ${successfulCount}/${normalizedGeneratedImages.length} ảnh (một số góc lỗi)`
+                                    :
+                                `Đã tạo ${successfulCount}/${normalizedGeneratedImages.length} ảnh AI`}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -70,6 +90,78 @@ export default function ImageResult({ result, originalImageUrl, onReset, onRegen
                 </div>
             )}
 
+            {/* Angle tabs */}
+            {normalizedGeneratedImages.length > 1 && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                    <p className="text-sm text-gray-500 mb-3">Góc máy đã tạo</p>
+                    <div className="flex flex-wrap gap-2">
+                        {normalizedGeneratedImages.map((item) => (
+                            <button
+                                key={item.angle}
+                                type="button"
+                                onClick={() => setActiveAngle(item.angle)}
+                                className={cn(
+                                    'px-3 py-1.5 rounded-full text-sm border transition-all',
+                                    activeAngle === item.angle
+                                        ? 'border-[#F59E0B] bg-amber-50 text-[#F59E0B]'
+                                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                                )}
+                            >
+                                {getCameraAngleLabel(item.angle)}
+                                {item.status === 'failed' && ' • Lỗi'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Multi preview grid */}
+            {normalizedGeneratedImages.length > 1 && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-600 mb-4">Tất cả ảnh đã tạo</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {normalizedGeneratedImages.map((item) => {
+                            const url = item.imageUrl ? getImageUrl(item.imageUrl) : '';
+                            const isItemFailed = item.status === 'failed';
+                            return (
+                                <div
+                                    key={item.angle}
+                                    className={cn(
+                                        'rounded-xl border overflow-hidden bg-gray-50',
+                                        activeAngle === item.angle ? 'border-[#F59E0B]' : 'border-gray-200'
+                                    )}
+                                >
+                                    <div className="aspect-square bg-white flex items-center justify-center">
+                                        {url ? (
+                                            <img src={url} alt={item.angle} className="w-full h-full object-contain" />
+                                        ) : (
+                                            <div className="text-center text-gray-400 px-4">
+                                                <p className="text-sm">{isItemFailed ? 'Tạo ảnh thất bại' : 'Chưa có ảnh'}</p>
+                                                {item.errorMessage && <p className="text-xs mt-1">{item.errorMessage}</p>}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-3 border-t border-gray-200 bg-white">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-medium text-gray-700">{getCameraAngleLabel(item.angle)}</span>
+                                            {url && (
+                                                <a
+                                                    href={url}
+                                                    download
+                                                    className="text-xs text-[#F59E0B] hover:underline"
+                                                >
+                                                    Tải xuống
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* Compare View */}
             {viewMode === 'compare' && (
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
@@ -90,6 +182,9 @@ export default function ImageResult({ result, originalImageUrl, onReset, onRegen
                         <div>
                             <p className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
                                 Ảnh AI
+                                <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
+                                    {getCameraAngleLabel(generatedByAngle?.angle || activeAngle)}
+                                </span>
                                 <span className={cn(
                                     'px-2 py-0.5 rounded-full text-white text-xs',
                                     isProcessing ? 'bg-yellow-500' :
@@ -151,6 +246,14 @@ export default function ImageResult({ result, originalImageUrl, onReset, onRegen
                         <div className="bg-gray-50 rounded-lg p-3">
                             <p className="text-gray-500">Brand Settings</p>
                             <p className="font-medium text-gray-900">{result.usedBrandSettings ? 'Có' : 'Không'}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 col-span-2 md:col-span-4">
+                            <p className="text-gray-500">Góc đã chọn</p>
+                            <p className="font-medium text-gray-900">
+                                {(result.cameraAngles && result.cameraAngles.length > 0 ? result.cameraAngles : selectedAngles)
+                                    .map(getCameraAngleLabel)
+                                    .join(', ')}
+                            </p>
                         </div>
                     </div>
                 </div>

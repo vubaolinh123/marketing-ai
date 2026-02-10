@@ -22,6 +22,7 @@ export interface GeneratedArticle {
     content: string;
     hashtags: string[];
     imageUrl?: string;
+    imageUrls?: string[];
 }
 
 const fakeArticlesByPurpose: Record<string, GeneratedArticle[]> = {

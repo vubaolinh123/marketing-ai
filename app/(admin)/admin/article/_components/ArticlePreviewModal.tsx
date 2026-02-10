@@ -33,6 +33,8 @@ export default function ArticlePreviewModal({
 
     const imagesToShow = customImages && customImages.length > 0
         ? customImages.map(transformImageUrl)
+        : article.imageUrls && article.imageUrls.length > 0
+            ? article.imageUrls.map(transformImageUrl)
         : article.imageUrl
             ? [transformImageUrl(article.imageUrl)]
             : [];
@@ -56,7 +58,7 @@ export default function ArticlePreviewModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 overflow-hidden"
                     onClick={onClose}
                 >
                     <motion.div
@@ -64,10 +66,10 @@ export default function ArticlePreviewModal({
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+                        className="bg-white w-full max-w-6xl h-[92dvh] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                     >
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-[#1F2937] to-[#111827] p-6 text-white">
+                        <div className="bg-gradient-to-r from-[#1F2937] to-[#111827] p-4 sm:p-6 text-white shrink-0">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F59E0B] to-[#EA580C] flex items-center justify-center">
@@ -92,17 +94,17 @@ export default function ArticlePreviewModal({
                         </div>
 
                         {/* Content */}
-                        <div className="p-6 max-h-[50vh] overflow-y-auto">
+                        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6">
                             {/* Images */}
                             {imagesToShow.length > 0 && (
                                 <div className="mb-6">
-                                    <div className={`grid gap-2 ${imagesToShow.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                    <div className={`grid gap-3 sm:gap-4 ${imagesToShow.length > 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
                                         {imagesToShow.map((img, index) => (
                                             <img
                                                 key={index}
                                                 src={img}
                                                 alt={`Article image ${index + 1}`}
-                                                className="w-full rounded-xl object-cover aspect-video"
+                                                className="w-full h-auto max-h-[60dvh] rounded-xl object-contain bg-gray-100"
                                             />
                                         ))}
                                     </div>
@@ -111,10 +113,10 @@ export default function ArticlePreviewModal({
 
                             {/* Article Content */}
                             <div className="space-y-4">
-                                <h3 className="text-xl font-bold text-gray-900">
+                                <h3 className="text-2xl font-bold text-gray-900">
                                     {article.title}
                                 </h3>
-                                <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                <div className="text-base text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
                                     {article.content}
                                 </div>
 
@@ -135,7 +137,7 @@ export default function ArticlePreviewModal({
                         </div>
 
                         {/* Footer Actions */}
-                        <div className="p-6 border-t border-gray-100 bg-gray-50">
+                        <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 shrink-0">
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <Button
                                     variant="secondary"

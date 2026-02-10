@@ -8,6 +8,7 @@ import api from './api';
 export interface ProductImageInput {
     originalImageUrl: string;
     backgroundType: string;
+    cameraAngles?: string[];
     customBackground?: string;
     useLogo?: boolean;
     logoPosition?: string;
@@ -18,12 +19,19 @@ export interface ProductImageInput {
 }
 
 export interface ProductImage {
+    generatedImages?: Array<{
+        angle: string;
+        imageUrl: string;
+        status?: 'processing' | 'completed' | 'failed';
+        errorMessage?: string;
+    }>;
     _id: string;
     id: string;
     userId: string;
     title: string;
     originalImageUrl: string;
     generatedImageUrl: string;
+    cameraAngles?: string[];
     backgroundType: string;
     customBackground: string;
     useLogo: boolean;
@@ -67,7 +75,10 @@ export const productImageApi = {
      * Generate a new product image with AI
      */
     generate: async (input: ProductImageInput): Promise<ProductImageResponse> => {
-        const response = await api.post('/product-images/generate', input);
+        const response = await api.post('/product-images/generate', input, {
+            // Multi-angle generation can take significantly longer than default API timeout.
+            timeout: 300000, // 5 minutes
+        });
         return response.data;
     },
 
@@ -75,7 +86,9 @@ export const productImageApi = {
      * Regenerate an existing product image (same input, new result)
      */
     regenerate: async (id: string): Promise<ProductImageResponse> => {
-        const response = await api.post(`/product-images/${id}/regenerate`);
+        const response = await api.post(`/product-images/${id}/regenerate`, undefined, {
+            timeout: 300000, // 5 minutes
+        });
         return response.data;
     },
 

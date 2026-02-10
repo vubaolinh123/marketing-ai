@@ -100,16 +100,23 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed inset-4 md:inset-8 lg:inset-12 bg-white rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col"
+                        className="fixed inset-3 md:inset-6 lg:inset-8 bg-white rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col border border-gray-200"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-lg font-semibold text-gray-900">
-                                Chi tiết kế hoạch Marketing
-                            </h2>
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    Chi tiết kế hoạch Marketing
+                                </h2>
+                                {plan && (
+                                    <p className="text-sm text-gray-500 mt-0.5">
+                                        Nhấn vào ngày để xem toàn bộ chủ đề trong ngày đó
+                                    </p>
+                                )}
+                            </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                                className="p-2 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200 bg-white"
                             >
                                 <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -118,7 +125,7 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-auto p-6">
+                        <div className="flex-1 overflow-auto p-6 bg-gray-50/30">
                             {isLoading ? (
                                 <div className="flex items-center justify-center h-64">
                                     <div className="flex flex-col items-center gap-3">
@@ -139,7 +146,7 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                                     </div>
                                 </div>
                             ) : plan ? (
-                                <div className="flex flex-col lg:flex-row gap-6">
+                                <div className="flex flex-col xl:flex-row gap-6">
                                     {/* Main content */}
                                     <div className="flex-1">
                                         <PlanSummary plan={plan} />

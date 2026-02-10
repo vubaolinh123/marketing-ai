@@ -76,9 +76,24 @@ export default function ImageListPage() {
         setPreviewImage(image);
     }, []);
 
-    const handleDownload = useCallback((image: ProductImage) => {
-        if (image.generatedImageUrl) {
-            window.open(getImageUrl(image.generatedImageUrl), '_blank');
+    const handleDownload = useCallback((image: ProductImage, preferredUrl?: string) => {
+        if (preferredUrl) {
+            window.open(getImageUrl(preferredUrl), '_blank');
+            return;
+        }
+
+        const generatedImages = image.generatedImages && image.generatedImages.length > 0
+            ? image.generatedImages
+            : image.generatedImageUrl
+                ? [{ imageUrl: image.generatedImageUrl, status: image.status }]
+                : [];
+
+        const firstSuccessful = generatedImages.find((item) => item.imageUrl && item.status !== 'failed');
+        const fallback = generatedImages[0];
+        const resolvedUrl = firstSuccessful?.imageUrl || fallback?.imageUrl;
+
+        if (resolvedUrl) {
+            window.open(getImageUrl(resolvedUrl), '_blank');
         }
     }, []);
 
@@ -110,7 +125,7 @@ export default function ImageListPage() {
             >
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Xem ảnh</h1>
                 <p className="text-gray-600">
-                    Danh sách {pagination.total} ảnh đã tạo
+                    Danh sách {pagination.total} lượt tạo ảnh (hỗ trợ nhiều góc)
                 </p>
             </motion.div>
 

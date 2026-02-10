@@ -19,6 +19,7 @@ export interface GenerateArticleRequest {
     wordCount: number;
     description: string;
     imageUrl?: string;
+    imageUrls?: string[];
     useBrandSettings?: boolean;
 }
 
@@ -27,6 +28,7 @@ export interface GeneratedArticle {
     content: string;
     hashtags: string[];
     imageUrl?: string;
+    imageUrls?: string[];
     imagePrompt?: string;
 }
 
@@ -35,6 +37,7 @@ export interface Article extends GeneratedArticle {
     userId: string;
     topic: string;
     purpose: string;
+    imageUrls?: string[];
     status: 'draft' | 'published';
     createdAt: string;
     updatedAt: string;
@@ -103,6 +106,7 @@ export async function saveArticle(data: {
     topic: string;
     purpose: string;
     imageUrl?: string;
+    imageUrls?: string[];
     hashtags?: string[];
     status?: 'draft' | 'published';
 }): Promise<Article> {

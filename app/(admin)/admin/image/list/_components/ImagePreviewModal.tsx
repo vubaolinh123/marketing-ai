@@ -2,12 +2,12 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProductImage, getImageUrl } from '@/lib/api';
-import { backgroundOptions, outputSizeOptions } from '@/lib/fakeData/image';
+import { backgroundOptions, getCameraAngleLabel, outputSizeOptions } from '@/lib/fakeData/image';
 
 interface ImagePreviewModalProps {
     image: ProductImage | null;
     onClose: () => void;
-    onDownload: (image: ProductImage) => void;
+    onDownload: (image: ProductImage, targetUrl?: string) => void;
 }
 
 export default function ImagePreviewModal({ image, onClose, onDownload }: ImagePreviewModalProps) {
@@ -15,7 +15,15 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
 
     const bgLabel = backgroundOptions.find(o => o.value === image.backgroundType)?.label || image.backgroundType;
     const sizeLabel = outputSizeOptions.find(o => o.value === image.outputSize)?.label || image.outputSize;
-    const imageUrl = image.generatedImageUrl ? getImageUrl(image.generatedImageUrl) : '';
+    const generatedImages = image.generatedImages && image.generatedImages.length > 0
+        ? image.generatedImages
+        : image.generatedImageUrl
+            ? [{ angle: image.cameraAngles?.[0] || 'wide', imageUrl: image.generatedImageUrl, status: image.status }]
+            : [];
+
+    const coverImage = generatedImages.find(item => item.imageUrl && item.status !== 'failed') || generatedImages[0];
+    const imageUrl = coverImage?.imageUrl ? getImageUrl(coverImage.imageUrl) : '';
+    const shouldUseWideLayout = generatedImages.length >= 4;
 
     return (
         <AnimatePresence>
@@ -30,7 +38,10 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+                    className={[
+                        'bg-white rounded-2xl shadow-2xl w-full max-h-[92vh] overflow-hidden border border-gray-200',
+                        shouldUseWideLayout ? 'max-w-[1280px]' : 'max-w-4xl'
+                    ].join(' ')}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -56,7 +67,7 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                     </div>
 
                     {/* Image */}
-                    <div className="p-4 bg-gray-50">
+                    <div className="p-4 bg-gray-50 space-y-4">
                         <div className="relative rounded-xl overflow-hidden bg-white shadow-inner max-h-[60vh] flex items-center justify-center">
                             {imageUrl ? (
                                 <img
@@ -73,6 +84,48 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                                 </div>
                             )}
                         </div>
+
+                        {generatedImages.length > 1 && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-gray-600">Bộ ảnh theo góc máy</p>
+                                <div className={[
+                                    'grid gap-3',
+                                    generatedImages.length >= 5
+                                        ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-5'
+                                        : generatedImages.length === 4
+                                            ? 'grid-cols-2 lg:grid-cols-4'
+                                            : 'grid-cols-2 md:grid-cols-3'
+                                ].join(' ')}>
+                                {generatedImages.map((item) => {
+                                    const itemUrl = item.imageUrl ? getImageUrl(item.imageUrl) : '';
+                                    return (
+                                        <div key={item.angle} className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+                                            <div className="aspect-[4/5] bg-gray-50 flex items-center justify-center">
+                                                {itemUrl ? (
+                                                    <img src={itemUrl} alt={item.angle} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 px-2 text-center">Chưa có ảnh</span>
+                                                )}
+                                            </div>
+                                            <div className="p-2 border-t border-gray-100">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-xs font-medium text-gray-700 truncate">{getCameraAngleLabel(item.angle)}</p>
+                                                    {itemUrl && (
+                                                        <button
+                                                            onClick={() => onDownload(image, item.imageUrl)}
+                                                            className="text-[10px] text-[#F59E0B] font-semibold hover:underline"
+                                                        >
+                                                            Tải
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}
@@ -94,9 +147,14 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                                     Brand Settings
                                 </span>
                             )}
+                            {generatedImages.length > 1 && (
+                                <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-medium">
+                                    {generatedImages.length} góc máy
+                                </span>
+                            )}
                         </div>
                         <button
-                            onClick={() => onDownload(image)}
+                            onClick={() => onDownload(image, imageUrl || undefined)}
                             disabled={!imageUrl}
                             className="px-4 py-2 bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white rounded-lg font-medium flex items-center gap-2 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >

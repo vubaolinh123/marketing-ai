@@ -3,12 +3,12 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ProductImage, getImageUrl } from '@/lib/api';
-import { backgroundOptions, outputSizeOptions } from '@/lib/fakeData/image';
+import { backgroundOptions, getCameraAngleLabel, outputSizeOptions } from '@/lib/fakeData/image';
 
 interface ImageCardProps {
     image: ProductImage;
     onView: (image: ProductImage) => void;
-    onDownload: (image: ProductImage) => void;
+    onDownload: (image: ProductImage, targetUrl?: string) => void;
     onDelete: (image: ProductImage) => void;
     index: number;
 }
@@ -16,7 +16,18 @@ interface ImageCardProps {
 export default function ImageCard({ image, onView, onDownload, onDelete, index }: ImageCardProps) {
     const bgLabel = backgroundOptions.find(o => o.value === image.backgroundType)?.label || image.backgroundType;
     const sizeLabel = outputSizeOptions.find(o => o.value === image.outputSize)?.label || image.outputSize;
-    const imageUrl = image.generatedImageUrl ? getImageUrl(image.generatedImageUrl) : '';
+    const generatedImages = image.generatedImages && image.generatedImages.length > 0
+        ? image.generatedImages
+        : image.generatedImageUrl
+            ? [{ angle: image.cameraAngles?.[0] || 'wide', imageUrl: image.generatedImageUrl, status: image.status }]
+            : [];
+
+    const successfulImages = generatedImages.filter(item => item.imageUrl && item.status !== 'failed');
+    const coverImage = successfulImages[0] || generatedImages[0];
+    const imageUrl = coverImage?.imageUrl ? getImageUrl(coverImage.imageUrl) : '';
+    const totalAngles = (image.cameraAngles && image.cameraAngles.length > 0)
+        ? image.cameraAngles.length
+        : generatedImages.length;
     const isProcessing = image.status === 'processing';
     const isFailed = image.status === 'failed';
 
@@ -62,7 +73,7 @@ export default function ImageCard({ image, onView, onDownload, onDelete, index }
                             </svg>
                         </button>
                         <button
-                            onClick={() => onDownload(image)}
+                            onClick={() => onDownload(image, coverImage?.imageUrl)}
                             className="p-2 bg-white rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                             title="Tải xuống"
                         >
@@ -91,11 +102,34 @@ export default function ImageCard({ image, onView, onDownload, onDelete, index }
                 )}>
                     {isProcessing ? 'Đang xử lý' : isFailed ? 'Lỗi' : 'Logo ✓'}
                 </div>
+
+                {totalAngles > 1 && (
+                    <div className="absolute top-2 left-2 px-2 py-1 bg-amber-100/90 text-amber-700 rounded-full text-xs font-medium">
+                        {totalAngles} góc
+                    </div>
+                )}
             </div>
 
             {/* Info */}
             <div className="p-3">
                 <h4 className="font-medium text-gray-900 truncate text-sm">{image.title}</h4>
+                {generatedImages.length > 0 && (
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                        {generatedImages.slice(0, 2).map(item => (
+                            <span
+                                key={item.angle}
+                                className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-medium"
+                            >
+                                {getCameraAngleLabel(item.angle)}
+                            </span>
+                        ))}
+                        {generatedImages.length > 2 && (
+                            <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-medium">
+                                +{generatedImages.length - 2}
+                            </span>
+                        )}
+                    </div>
+                )}
                 <div className="flex items-center gap-2 mt-2">
                     <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
                         {bgLabel}

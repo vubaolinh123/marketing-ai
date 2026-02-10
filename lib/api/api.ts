@@ -38,7 +38,8 @@ export const removeToken = (): void => {
 // Create axios instance
 const api: AxiosInstance = axios.create({
     baseURL: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api`,
-    timeout: 30000,
+    // Keep a safe default for normal APIs; heavy AI endpoints should override per-request timeout.
+    timeout: 60000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -76,7 +77,17 @@ api.interceptors.response.use(
     },
     (error: AxiosError<ApiError>) => {
         const status = error.response?.status;
-        const message = error.response?.data?.message || 'Đã xảy ra lỗi';
+        let message = error.response?.data?.message || 'Đã xảy ra lỗi';
+
+        // Axios timeout/network cases often have no response payload.
+        if (!error.response) {
+            const rawMessage = (error.message || '').toLowerCase();
+            if (error.code === 'ECONNABORTED' || rawMessage.includes('timeout')) {
+                message = 'Yêu cầu xử lý quá thời gian. Hệ thống có thể vẫn đang tạo ảnh, vui lòng chờ thêm và thử lại.';
+            } else if (error.message) {
+                message = error.message;
+            }
+        }
 
         // Log error in development - more detailed
         if (process.env.NODE_ENV === 'development') {
@@ -85,6 +96,7 @@ api.interceptors.response.use(
                 code: error.code,
                 message: error.message,
                 response: error.response?.data,
+                timeout: error.config?.timeout,
                 request: error.request ? 'Request was made but no response received' : 'Request setup error'
             });
         }

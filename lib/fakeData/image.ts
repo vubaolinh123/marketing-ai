@@ -12,6 +12,20 @@ export const backgroundOptions = [
     { value: 'custom', label: '🎨 Tùy chỉnh', description: 'Mô tả bối cảnh sáng tạo' },
 ];
 
+export const cameraAngleOptions = [
+    { value: 'wide', label: '🖼️ Toàn cảnh', description: 'Lấy trọn bố cục, sản phẩm nổi bật trong không gian' },
+    { value: 'medium', label: '📷 Trung cảnh', description: 'Cân bằng sản phẩm và bối cảnh xung quanh' },
+    { value: 'closeup', label: '🔍 Cận cảnh', description: 'Nhấn mạnh chi tiết, chất liệu, bề mặt sản phẩm' },
+    { value: 'topdown', label: '⬇️ Từ trên xuống', description: 'Góc nhìn flat-lay, phù hợp setup bàn/chụp món ăn' },
+    { value: 'detail', label: '✨ Cận chi tiết', description: 'Zoom vào điểm nhấn quan trọng của sản phẩm' },
+];
+
+export const defaultCameraAngles = ['wide'];
+
+export function getCameraAngleLabel(angle: string): string {
+    return cameraAngleOptions.find(option => option.value === angle)?.label || angle;
+}
+
 export const logoPositionOptions = [
     { value: 'top-left', label: 'Góc trên trái' },
     { value: 'top-right', label: 'Góc trên phải' },
@@ -31,6 +45,7 @@ export const outputSizeOptions = [
 
 export interface ImageGenerationInput {
     images: File[];
+    cameraAngles: string[];
     backgroundType: string;
     customBackground: string;
     useLogo: boolean;
@@ -44,6 +59,7 @@ export interface GeneratedImage {
     id: string;
     originalUrl: string;
     generatedUrl: string;
+    cameraAngle?: string;
     backgroundType: string;
     outputSize: string;
     createdAt: Date;
@@ -71,6 +87,7 @@ export const fakeGeneratedImages: GeneratedImage[] = [
 
 export const defaultImageInput: ImageGenerationInput = {
     images: [],
+    cameraAngles: defaultCameraAngles,
     backgroundType: 'studio',
     customBackground: '',
     useLogo: true,

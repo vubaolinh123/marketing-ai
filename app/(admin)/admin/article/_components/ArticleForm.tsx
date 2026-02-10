@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { fakeTopics, purposeOptions } from '@/lib/fakeData';
+import { purposeOptions } from '@/lib/fakeData';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { settingsApi } from '@/lib/api';
@@ -27,9 +27,10 @@ const wordCountOptions = [
 interface ArticleFormProps {
     onSubmit: (data: ArticleFormData) => void;
     isLoading: boolean;
+    submitLabel?: string;
 }
 
-export default function ArticleForm({ onSubmit, isLoading }: ArticleFormProps) {
+export default function ArticleForm({ onSubmit, isLoading, submitLabel = 'Tạo bài viết với AI' }: ArticleFormProps) {
     const [formData, setFormData] = useState<ArticleFormData>({
         topic: '',
         purpose: '',
@@ -140,24 +141,19 @@ export default function ArticleForm({ onSubmit, isLoading }: ArticleFormProps) {
                 )}
             </motion.div>
 
-            {/* Topic Select */}
+            {/* Topic Input */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     Chủ đề bài viết
                 </label>
-                <select
+                <input
+                    type="text"
                     value={formData.topic}
                     onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                    placeholder="Nhập chủ đề bạn muốn viết..."
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
                     disabled={isLoading}
-                >
-                    <option value="">-- Chọn chủ đề --</option>
-                    {fakeTopics.map((topic) => (
-                        <option key={topic.value} value={topic.value}>
-                            {topic.label}
-                        </option>
-                    ))}
-                </select>
+                />
             </div>
 
             {/* Purpose Radio */}
@@ -272,7 +268,7 @@ export default function ArticleForm({ onSubmit, isLoading }: ArticleFormProps) {
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Tạo bài viết với AI
+                {submitLabel}
             </Button>
         </motion.form>
     );

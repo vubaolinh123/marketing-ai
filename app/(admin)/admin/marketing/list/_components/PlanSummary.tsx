@@ -29,8 +29,13 @@ export default function PlanSummary({ plan }: PlanSummaryProps) {
     const endDate = new Date(plan.endDate);
     const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
+    const topTopics = [...plan.posts]
+        .slice(0, 3)
+        .map(post => post.topic)
+        .filter(Boolean);
+
     return (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-5 mb-6">
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-5 mb-6 border border-amber-200/60 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Campaign Info */}
                 <div className="flex-1">
@@ -73,6 +78,22 @@ export default function PlanSummary({ plan }: PlanSummaryProps) {
                     <div className="text-xs text-gray-500">Đã đăng</div>
                 </div>
             </div>
+
+            {topTopics.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-amber-200/50">
+                    <p className="text-xs font-semibold text-gray-600 mb-2">Chủ đề nổi bật</p>
+                    <div className="flex flex-wrap gap-2">
+                        {topTopics.map((topic, index) => (
+                            <span
+                                key={`${topic}-${index}`}
+                                className="px-2.5 py-1 rounded-full bg-white text-gray-700 text-xs border border-amber-200/70"
+                            >
+                                {topic}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

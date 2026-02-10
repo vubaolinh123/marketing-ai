@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { ImageGenerationInput, defaultImageInput } from '@/lib/fakeData/image';
+import { ImageGenerationInput, defaultImageInput, getCameraAngleLabel } from '@/lib/fakeData/image';
 import { productImageApi, ProductImage } from '@/lib/api';
 import { uploadImage, getImageUrl } from '@/lib/api/upload.api';
 
@@ -29,9 +29,16 @@ export default function AIImagePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const selectedAngles = formData.cameraAngles?.length > 0 ? formData.cameraAngles : ['wide'];
+
     const handleSubmit = useCallback(async () => {
         if (formData.images.length === 0) {
             setError('Vui lòng upload ảnh sản phẩm');
+            return;
+        }
+
+        if (!selectedAngles.length) {
+            setError('Vui lòng chọn ít nhất 1 góc máy');
             return;
         }
 
@@ -49,6 +56,7 @@ export default function AIImagePage() {
             const response = await productImageApi.generate({
                 originalImageUrl: imageUrl,
                 backgroundType: formData.backgroundType,
+                cameraAngles: selectedAngles,
                 customBackground: formData.customBackground,
                 useLogo: formData.useLogo,
                 logoPosition: formData.logoPosition,
@@ -71,7 +79,7 @@ export default function AIImagePage() {
         } finally {
             setIsLoading(false);
         }
-    }, [formData]);
+    }, [formData, selectedAngles]);
 
     const handleReset = useCallback(() => {
         setFormData(defaultImageInput);
@@ -202,17 +210,38 @@ export default function AIImagePage() {
             )}
 
             {currentStep === 'processing' && (
-                <ImageProcessing imageCount={1} />
+                <ImageProcessing imageCount={selectedAngles.length} />
             )}
 
             {currentStep === 'result' && generatedResult && (
                 <ImageResult
                     result={generatedResult}
                     originalImageUrl={originalImageUrl}
+                    selectedAngles={selectedAngles}
                     onReset={handleReset}
                     onRegenerate={handleRegenerate}
                     isRegenerating={isLoading}
                 />
+            )}
+
+            {currentStep === 'processing' && selectedAngles.length > 1 && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-6 bg-white rounded-2xl border border-gray-200 p-4"
+                >
+                    <p className="text-sm text-gray-600 mb-3">Đang tạo theo góc đã chọn:</p>
+                    <div className="flex flex-wrap gap-2">
+                        {selectedAngles.map((angle) => (
+                            <span
+                                key={angle}
+                                className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium"
+                            >
+                                {getCameraAngleLabel(angle)}
+                            </span>
+                        ))}
+                    </div>
+                </motion.div>
             )}
         </div>
     );

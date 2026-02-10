@@ -90,7 +90,7 @@ export default function ImageDropzone({ images, onChange, disabled, maxImages = 
                         </p>
                         <p className="text-sm text-gray-500 mt-1">hoặc click để chọn file</p>
                     </div>
-                    <p className="text-xs text-gray-400">PNG, JPG, WEBP (tối đa 10MB) - Chỉ 1 ảnh</p>
+                    <p className="text-xs text-gray-400">PNG, JPG, WEBP (tối đa 10MB) - Chỉ 1 ảnh nguồn, AI sẽ tạo nhiều góc</p>
                 </div>
             </div>
 

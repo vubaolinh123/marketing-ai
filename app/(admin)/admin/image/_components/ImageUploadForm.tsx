@@ -7,6 +7,8 @@ import ImageDropzone from './ImageDropzone';
 import {
     ImageGenerationInput,
     backgroundOptions,
+    cameraAngleOptions,
+    getCameraAngleLabel,
     logoPositionOptions,
     outputSizeOptions,
 } from '@/lib/fakeData/image';
@@ -19,7 +21,21 @@ interface ImageUploadFormProps {
 }
 
 export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }: ImageUploadFormProps) {
-    const canSubmit = data.images.length > 0;
+    const selectedAngles = data.cameraAngles?.length > 0 ? data.cameraAngles : ['wide'];
+    const canSubmit = data.images.length > 0 && selectedAngles.length > 0;
+
+    const toggleCameraAngle = (angle: string) => {
+        const currentAngles = data.cameraAngles || [];
+        const exists = currentAngles.includes(angle);
+        const nextAngles = exists
+            ? currentAngles.filter((item) => item !== angle)
+            : [...currentAngles, angle];
+
+        onChange({
+            ...data,
+            cameraAngles: nextAngles.length > 0 ? nextAngles : ['wide']
+        });
+    };
 
     return (
         <motion.div
@@ -76,6 +92,48 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white flex items-center justify-center text-sm font-bold">2</span>
+                    Chọn góc máy
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">Bạn có thể chọn nhiều góc. Mỗi góc sẽ tạo ra 1 ảnh riêng.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {cameraAngleOptions.map(option => {
+                        const isSelected = selectedAngles.includes(option.value);
+
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => toggleCameraAngle(option.value)}
+                                disabled={isLoading}
+                                className={cn(
+                                    'p-4 rounded-xl border-2 text-left transition-all',
+                                    isSelected
+                                        ? 'border-[#F59E0B] bg-amber-50'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                )}
+                            >
+                                <p className={cn(
+                                    'font-medium',
+                                    isSelected ? 'text-[#F59E0B]' : 'text-gray-700'
+                                )}>
+                                    {option.label}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                    <span className="font-medium">Đã chọn {selectedAngles.length} góc:</span>{' '}
+                    {selectedAngles.map(getCameraAngleLabel).join(', ')}
+                </div>
+            </div>
+
+            {/* Background Options */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white flex items-center justify-center text-sm font-bold">3</span>
                     Chọn bối cảnh / Tình huống
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">AI sẽ biến đổi sản phẩm vào bối cảnh mới - không chỉ thay background</p>
@@ -128,7 +186,7 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
             {/* Logo & Size Options */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white flex items-center justify-center text-sm font-bold">3</span>
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white flex items-center justify-center text-sm font-bold">4</span>
                     Tùy chọn khác
                 </h3>
 
@@ -238,7 +296,7 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    Tạo ảnh AI
+                    Tạo {selectedAngles.length} ảnh
                 </Button>
             </div>
         </motion.div>
