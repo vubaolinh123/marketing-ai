@@ -337,7 +337,7 @@ export default function MarketingPlanPage() {
     const stepIndex = steps.findIndex(s => s.id === currentStep);
 
     return (
-        <div className="w-[90%] mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

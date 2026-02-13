@@ -63,7 +63,7 @@ export default function VideoScriptPage() {
     }, []);
 
     return (
-        <div className="w-[95%] max-w-[1600px] mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

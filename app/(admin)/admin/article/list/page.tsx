@@ -42,8 +42,10 @@ export default function ArticleListPage() {
     });
 
     // Fetch articles from API
-    const fetchArticles = useCallback(async () => {
-        setIsLoading(true);
+    const fetchArticles = useCallback(async (withLoading = true) => {
+        if (withLoading) {
+            setIsLoading(true);
+        }
         try {
             const params: Record<string, string | number> = {
                 page: currentPage,
@@ -63,7 +65,9 @@ export default function ArticleListPage() {
             console.error('Failed to fetch articles:', error);
             toast.error('Không thể tải danh sách bài viết');
         } finally {
-            setIsLoading(false);
+            if (withLoading) {
+                setIsLoading(false);
+            }
         }
     }, [currentPage, filters]);
 
@@ -71,6 +75,19 @@ export default function ArticleListPage() {
     useEffect(() => {
         fetchArticles();
     }, [fetchArticles]);
+
+    useEffect(() => {
+        const hasProcessingItem = articles.some((article) => article.status === 'processing');
+        if (!hasProcessingItem) return;
+
+        const intervalId = window.setInterval(() => {
+            fetchArticles(false);
+        }, 8000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [articles, fetchArticles]);
 
     // Reset to page 1 when filters change
     const handleFiltersChange = useCallback((newFilters: FilterState) => {
@@ -149,7 +166,7 @@ export default function ArticleListPage() {
     );
 
     return (
-        <div className="w-[95%] max-w-[1600px] mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

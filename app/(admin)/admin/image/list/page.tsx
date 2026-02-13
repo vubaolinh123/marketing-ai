@@ -36,8 +36,10 @@ export default function ImageListPage() {
     });
 
     // Fetch images from API
-    const fetchImages = useCallback(async () => {
-        setIsLoading(true);
+    const fetchImages = useCallback(async (withLoading = true) => {
+        if (withLoading) {
+            setIsLoading(true);
+        }
         try {
             const response = await productImageApi.getAll({
                 page: currentPage,
@@ -58,7 +60,9 @@ export default function ImageListPage() {
         } catch (error) {
             console.error('Failed to fetch images:', error);
         } finally {
-            setIsLoading(false);
+            if (withLoading) {
+                setIsLoading(false);
+            }
         }
     }, [currentPage, filters]);
 
@@ -66,6 +70,19 @@ export default function ImageListPage() {
     useEffect(() => {
         fetchImages();
     }, [fetchImages]);
+
+    useEffect(() => {
+        const hasProcessingItem = images.some((image) => image.status === 'processing');
+        if (!hasProcessingItem) return;
+
+        const intervalId = window.setInterval(() => {
+            fetchImages(false);
+        }, 8000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [images, fetchImages]);
 
     const handleFiltersChange = useCallback((newFilters: ImageFilterState) => {
         setFilters(newFilters);
@@ -116,7 +133,7 @@ export default function ImageListPage() {
     }, [deleteModal.image, fetchImages]);
 
     return (
-        <div className="max-w-7xl mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

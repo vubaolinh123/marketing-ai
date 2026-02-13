@@ -26,6 +26,8 @@ interface ArticleFiltersProps {
 
 const statusOptions = [
     { value: '', label: 'Tất cả trạng thái' },
+    { value: 'processing', label: '⏳ Đang tạo' },
+    { value: 'failed', label: '❌ Thất bại' },
     { value: 'draft', label: '📝 Nháp' },
     { value: 'published', label: '✅ Đã xuất bản' },
 ];

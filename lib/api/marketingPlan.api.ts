@@ -78,7 +78,7 @@ export interface MarketingPlan {
     strategySuggestion?: MarketingStrategySuggestion;
     notes?: string;
     useBrandSettings?: boolean;
-    status?: 'active' | 'completed' | 'draft';
+    status?: 'processing' | 'failed' | 'active' | 'completed' | 'draft';
 }
 
 export interface MarketingPlanListItem {
@@ -88,7 +88,7 @@ export interface MarketingPlanListItem {
     endDate: string;
     totalPosts: number;
     channels: string[];
-    status: 'active' | 'completed' | 'draft';
+    status: 'processing' | 'failed' | 'active' | 'completed' | 'draft';
     createdAt: string;
 }
 
@@ -153,7 +153,7 @@ export async function deleteMarketingPlan(id: string): Promise<void> {
  */
 export async function updateMarketingPlanStatus(
     id: string,
-    status: 'active' | 'completed' | 'draft'
+    status: 'processing' | 'failed' | 'active' | 'completed' | 'draft'
 ): Promise<MarketingPlan> {
     const response = await api.patch(`/marketing-plan/${id}/status`, { status });
     return response.data.data;

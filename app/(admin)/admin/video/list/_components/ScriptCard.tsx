@@ -23,6 +23,16 @@ export default function ScriptCard({ script, onView, onDelete, index }: ScriptCa
         }).format(new Date(date));
     };
 
+    const statusBadge = script.status === 'completed'
+        ? { className: 'bg-green-100 text-green-700', label: '✅ Hoàn thành' }
+        : script.status === 'processing'
+            ? { className: 'bg-amber-100 text-amber-700', label: '⏳ Đang xử lý' }
+            : script.status === 'failed'
+                ? { className: 'bg-red-100 text-red-700', label: '❌ Thất bại' }
+                : script.status === 'draft'
+                    ? { className: 'bg-gray-100 text-gray-700', label: '📝 Nháp' }
+                    : null;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -54,6 +64,11 @@ export default function ScriptCard({ script, onView, onDelete, index }: ScriptCa
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-700">
                         {sizeLabel}
                     </span>
+                    {statusBadge && (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusBadge.className}`}>
+                            {statusBadge.label}
+                        </span>
+                    )}
                 </div>
 
                 {/* Summary */}

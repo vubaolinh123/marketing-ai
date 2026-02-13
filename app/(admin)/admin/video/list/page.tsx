@@ -42,8 +42,10 @@ export default function VideoScriptListPage() {
     });
 
     // Fetch scripts from API
-    const fetchScripts = useCallback(async () => {
-        setLoading(true);
+    const fetchScripts = useCallback(async (withLoading = true) => {
+        if (withLoading) {
+            setLoading(true);
+        }
         try {
             const response = await videoScriptApi.getAll({
                 page: currentPage,
@@ -60,7 +62,9 @@ export default function VideoScriptListPage() {
             console.error('Error fetching scripts:', error);
             console.error('Lỗi khi tải danh sách kịch bản');
         } finally {
-            setLoading(false);
+            if (withLoading) {
+                setLoading(false);
+            }
         }
     }, [currentPage, filters]);
 
@@ -68,6 +72,19 @@ export default function VideoScriptListPage() {
     useEffect(() => {
         fetchScripts();
     }, [fetchScripts]);
+
+    useEffect(() => {
+        const hasProcessingItem = scripts.some((script) => script.status === 'processing');
+        if (!hasProcessingItem) return;
+
+        const intervalId = window.setInterval(() => {
+            fetchScripts(false);
+        }, 8000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [scripts, fetchScripts]);
 
     // Total pages calculation
     const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
@@ -112,7 +129,7 @@ export default function VideoScriptListPage() {
     }, [deleteModal.script]);
 
     return (
-        <div className="w-[95%] max-w-[1600px] mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -165,6 +182,7 @@ export default function VideoScriptListPage() {
                                 duration: script.duration,
                                 size: script.size,
                                 sceneCount: script.sceneCount,
+                                status: script.status,
                                 createdAt: script.createdAt
                             }}
                             onView={handleView}

@@ -418,7 +418,7 @@ export default function BrandSettingsPage() {
     // Loading state
     if (isLoading) {
         return (
-            <div className="max-w-4xl mx-auto">
+            <div className="w-[96%] max-w-[1700px] mx-auto">
                 <div className="mb-8">
                     <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2" />
                     <div className="h-4 w-96 bg-gray-100 rounded animate-pulse" />
@@ -438,7 +438,7 @@ export default function BrandSettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

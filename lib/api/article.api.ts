@@ -43,7 +43,7 @@ export interface Article extends GeneratedArticle {
     topic: string;
     purpose: string;
     imageUrls?: string[];
-    status: 'draft' | 'published';
+    status: 'processing' | 'failed' | 'draft' | 'published';
     createdAt: string;
     updatedAt: string;
 }
@@ -113,7 +113,7 @@ export async function saveArticle(data: {
     imageUrl?: string;
     imageUrls?: string[];
     hashtags?: string[];
-    status?: 'draft' | 'published';
+    status?: 'processing' | 'failed' | 'draft' | 'published';
 }): Promise<Article> {
     const response = await api.post('/articles', data);
     return response.data.data;

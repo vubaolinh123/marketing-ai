@@ -33,6 +33,14 @@ export default function ArticleCard({ article, onClick, onEdit, onDelete, index 
     // Transform image URL to include backend base URL
     const imageUrl = articleImages[0] ? getImageUrl(articleImages[0]) : null;
 
+    const statusBadge = article.status === 'published'
+        ? { className: 'bg-green-100 text-green-700', label: '✅ Đã xuất bản' }
+        : article.status === 'processing'
+            ? { className: 'bg-amber-100 text-amber-700', label: '⏳ Đang tạo' }
+            : article.status === 'failed'
+                ? { className: 'bg-red-100 text-red-700', label: '❌ Thất bại' }
+                : { className: 'bg-gray-100 text-gray-600', label: '📝 Nháp' };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -93,11 +101,8 @@ export default function ArticleCard({ article, onClick, onEdit, onDelete, index 
                             {purposeLabel}
                         </span>
                         {/* Status Badge */}
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${article.status === 'published'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-600'
-                            }`}>
-                            {article.status === 'published' ? '✅ Đã xuất bản' : '📝 Nháp'}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge.className}`}>
+                            {statusBadge.label}
                         </span>
                         {articleImages.length > 1 && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">

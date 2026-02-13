@@ -82,7 +82,7 @@ export default function ArticleDetailModal({
             topic: article.topic || '',
             purpose: article.purpose || '',
             hashtagsText: (article.hashtags || []).join(' '),
-            status: article.status || 'draft',
+            status: article.status === 'published' ? 'published' : 'draft',
         });
 
         setRegenForm({
@@ -456,9 +456,19 @@ export default function ArticleDetailModal({
                                             <div className="flex flex-wrap gap-2 mb-3">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${article.status === 'published'
                                                     ? 'bg-green-100 text-green-700'
-                                                    : 'bg-gray-100 text-gray-600'
+                                                    : article.status === 'processing'
+                                                        ? 'bg-amber-100 text-amber-700'
+                                                        : article.status === 'failed'
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-gray-100 text-gray-600'
                                                     }`}>
-                                                    {article.status === 'published' ? '✅ Đã xuất bản' : '📝 Nháp'}
+                                                    {article.status === 'published'
+                                                        ? '✅ Đã xuất bản'
+                                                        : article.status === 'processing'
+                                                            ? '⏳ Đang tạo'
+                                                            : article.status === 'failed'
+                                                                ? '❌ Thất bại'
+                                                                : '📝 Nháp'}
                                                 </span>
                                                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                                                     {article.topic}

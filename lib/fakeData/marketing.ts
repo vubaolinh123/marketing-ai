@@ -214,11 +214,13 @@ export interface PlanListItem {
     endDate: Date;
     totalPosts: number;
     channels: string[];
-    status: 'active' | 'completed' | 'draft';
+    status: 'processing' | 'failed' | 'active' | 'completed' | 'draft';
     createdAt: Date;
 }
 
 export const statusOptions = [
+    { value: 'processing', label: 'Đang xử lý', color: 'amber' },
+    { value: 'failed', label: 'Thất bại', color: 'red' },
     { value: 'active', label: 'Đang chạy', color: 'green' },
     { value: 'completed', label: 'Hoàn thành', color: 'blue' },
     { value: 'draft', label: 'Nháp', color: 'gray' },
@@ -244,7 +246,7 @@ const channelSets = [
     ['instagram', 'website'],
 ];
 
-const statuses: ('active' | 'completed' | 'draft')[] = ['active', 'completed', 'draft'];
+const statuses: ('processing' | 'failed' | 'active' | 'completed' | 'draft')[] = ['processing', 'failed', 'active', 'completed', 'draft'];
 
 export const fakePlanList: PlanListItem[] = Array.from({ length: 15 }, (_, i) => {
     const startOffset = i * 7;

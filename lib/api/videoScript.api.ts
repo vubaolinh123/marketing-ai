@@ -38,7 +38,7 @@ export interface VideoScript {
     scenes: SceneItem[];
     otherRequirements: string;
     ideaMode: 'manual' | 'ai' | 'concept_suggestion';
-    status: 'draft' | 'completed';
+    status: 'processing' | 'failed' | 'draft' | 'completed';
     sceneCount: number;
     createdAt: string;
     updatedAt: string;
@@ -51,7 +51,7 @@ export interface VideoScriptListItem {
     size: string;
     summary: string;
     sceneCount: number;
-    status: string;
+    status: 'processing' | 'failed' | 'draft' | 'completed';
     createdAt: string;
 }
 

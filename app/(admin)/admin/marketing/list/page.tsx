@@ -24,7 +24,7 @@ interface PlanListItem {
     endDate: Date;
     totalPosts: number;
     channels: string[];
-    status: 'active' | 'completed' | 'draft';
+    status: 'processing' | 'failed' | 'active' | 'completed' | 'draft';
     createdAt: Date;
 }
 
@@ -62,8 +62,10 @@ export default function MarketingListPage() {
     });
 
     // Fetch plans from API
-    const fetchPlans = useCallback(async () => {
-        setIsLoading(true);
+    const fetchPlans = useCallback(async (withLoading = true) => {
+        if (withLoading) {
+            setIsLoading(true);
+        }
         try {
             const result = await getMarketingPlans({
                 page: currentPage,
@@ -95,13 +97,28 @@ export default function MarketingListPage() {
             showError('Không thể tải danh sách kế hoạch');
             setPlans([]);
         } finally {
-            setIsLoading(false);
+            if (withLoading) {
+                setIsLoading(false);
+            }
         }
     }, [currentPage, filters.status, filters.search, filters.channel]);
 
     useEffect(() => {
         fetchPlans();
     }, [fetchPlans]);
+
+    useEffect(() => {
+        const hasProcessingItem = plans.some((plan) => plan.status === 'processing');
+        if (!hasProcessingItem) return;
+
+        const intervalId = window.setInterval(() => {
+            fetchPlans(false);
+        }, 8000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [plans, fetchPlans]);
 
     const handleFiltersChange = useCallback((newFilters: PlanFilterState) => {
         setFilters(newFilters);
@@ -138,7 +155,7 @@ export default function MarketingListPage() {
     }, [deleteModal.plan, fetchPlans]);
 
     return (
-        <div className="w-[90%] mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

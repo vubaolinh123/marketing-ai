@@ -170,6 +170,7 @@ export interface ScriptListItem {
     size: string;
     sceneCount: number;
     summary?: string;
+    status?: 'processing' | 'failed' | 'draft' | 'completed';
     createdAt: Date | string;
 }
 

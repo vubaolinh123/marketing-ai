@@ -81,18 +81,18 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] max-h-[90vh] overflow-hidden flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                    <div className="px-5 md:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl">📹</span>
                             <div>
@@ -113,7 +113,7 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div className="flex-1 overflow-y-auto px-4 md:px-5 lg:px-6 py-5 space-y-5">
                         {/* Summary */}
                         {script.summary && (
                             <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100">
@@ -123,49 +123,51 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
                         )}
 
                         {/* Scenes Table */}
-                        <div className="border rounded-xl overflow-hidden">
-                            <table className="w-full">
+                        <div className="border rounded-xl overflow-hidden bg-white">
+                            <div className="overflow-x-auto">
+                            <table className="w-full min-w-[980px]">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">STT</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Góc quay</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">STT</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Góc quay</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mô tả</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Voice Over</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nguồn</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Nguồn</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {script.scenes?.map((scene, index) => (
                                         <tr key={index} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap align-top">
                                                 {scene.sceneNumber}
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-4 py-3 align-top whitespace-nowrap">
                                                 <span className="inline-flex items-center px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-medium">
                                                     {SHOT_TYPE_LABELS[scene.shotType] || scene.shotType}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-700 max-w-xs">
+                                            <td className="px-4 py-3 text-sm text-gray-700 min-w-[300px] align-top">
                                                 <p className="line-clamp-3">{scene.description}</p>
                                                 {scene.location && (
                                                     <p className="text-xs text-gray-400 mt-1">📍 {scene.location}</p>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600 max-w-xs">
+                                            <td className="px-4 py-3 text-sm text-gray-600 min-w-[260px] align-top">
                                                 <p className="line-clamp-2">{scene.voiceOver || '-'}</p>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-gray-500">
+                                            <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap align-top">
                                                 {scene.source || 'Quay mới'}
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="p-6 border-t border-gray-100 flex gap-3">
+                    <div className="px-5 md:px-6 py-4 border-t border-gray-100 flex gap-3">
                         <button
                             onClick={handleCopyToClipboard}
                             disabled={copying}

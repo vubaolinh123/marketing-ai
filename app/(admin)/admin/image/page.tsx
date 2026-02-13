@@ -162,7 +162,7 @@ export default function AIImagePage() {
     const stepIndex = steps.findIndex(s => s.id === currentStep);
 
     return (
-        <div className="max-w-5xl mx-auto">
+        <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
