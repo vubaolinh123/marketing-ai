@@ -79,6 +79,37 @@ export const displayInfoSuggestions = [
 
 export const adIntensitySuggestions = ['low', 'medium', 'high'];
 
+function normalizeText(value: string): string {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'd')
+        .toLowerCase()
+        .trim();
+}
+
+export function normalizeAdIntensityValue(value?: string): string {
+    const raw = typeof value === 'string' ? value.trim() : '';
+    if (!raw) return '';
+
+    const normalized = normalizeText(raw);
+
+    if (/(^|[^a-z0-9])(high|strong|intense|aggressive|bold|max|maximum|cao|manh|dam|noi bat)([^a-z0-9]|$)/.test(normalized)) {
+        return 'high';
+    }
+
+    if (/(^|[^a-z0-9])(medium|moderate|balanced|normal|standard|vua|trung binh|can bang)([^a-z0-9]|$)/.test(normalized)) {
+        return 'medium';
+    }
+
+    if (/(^|[^a-z0-9])(low|light|subtle|soft|minimal|gentle|thap|nhe|it|toi thieu)([^a-z0-9]|$)/.test(normalized)) {
+        return 'low';
+    }
+
+    return raw;
+}
+
 export const typographyGuidanceSuggestions = [
     'Không chữ',
     'Headline đậm, rõ',

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { ImageGenerationInput, defaultImageInput, getCameraAngleLabel } from '@/lib/fakeData/image';
+import { ImageGenerationInput, defaultImageInput, getCameraAngleLabel, normalizeAdIntensityValue } from '@/lib/fakeData/image';
 import { productImageApi, ProductImage } from '@/lib/api';
 import { uploadImage, getImageUrl } from '@/lib/api/upload.api';
 
@@ -85,6 +85,8 @@ export default function AIImagePage() {
             setOriginalImageUrl(getImageUrl(imageUrl));
 
             // Step 2: Generate AI image
+            const normalizedAdIntensity = normalizeAdIntensityValue(formData.adIntensity);
+
             const response = await productImageApi.generate({
                 originalImageUrl: imageUrl,
                 backgroundType: formData.backgroundType,
@@ -97,7 +99,7 @@ export default function AIImagePage() {
                 useBrandSettings: formData.useBrandSettings,
                 usagePurpose: formData.usagePurpose,
                 displayInfo: formData.displayInfo,
-                adIntensity: formData.adIntensity,
+                adIntensity: normalizedAdIntensity,
                 typographyGuidance: formData.typographyGuidance,
                 targetAudience: formData.targetAudience,
                 visualStyle: formData.visualStyle,

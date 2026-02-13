@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadImage, generateAndSaveArticle, getImageUrl, productImageApi } from '@/lib/api';
-import { ImageGenerationInput, defaultImageInput } from '@/lib/fakeData/image';
+import { ImageGenerationInput, defaultImageInput, normalizeAdIntensityValue } from '@/lib/fakeData/image';
 import toast from '@/lib/toast';
 import type { ArticleMode, ArticleFormData } from './_components';
 
@@ -165,6 +165,8 @@ export default function ArticlePage() {
                 : articleContext;
 
             toast.loading(`Đang tạo ${selectedAngles.length} ảnh AI theo góc máy...`, { id: 'generate' });
+            const normalizedAdIntensity = normalizeAdIntensityValue(imageFormData.adIntensity);
+
             const imageResponse = await productImageApi.generate({
                 originalImageUrl,
                 backgroundType: imageFormData.backgroundType,
@@ -177,7 +179,7 @@ export default function ArticlePage() {
                 useBrandSettings: imageFormData.useBrandSettings,
                 usagePurpose: imageFormData.usagePurpose,
                 displayInfo: imageFormData.displayInfo,
-                adIntensity: imageFormData.adIntensity,
+                adIntensity: normalizedAdIntensity,
                 typographyGuidance: imageFormData.typographyGuidance,
                 targetAudience: imageFormData.targetAudience,
                 visualStyle: imageFormData.visualStyle,
