@@ -38,7 +38,7 @@ export interface NavItem {
 
 export interface ArticleInput {
     topic: string;
-    purpose: 'introduce' | 'sell' | 'share_knowledge';
+    purpose: string;
     description: string;
     generateWithAI: boolean;
 }

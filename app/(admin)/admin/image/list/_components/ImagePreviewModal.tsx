@@ -10,6 +10,32 @@ interface ImagePreviewModalProps {
     onDownload: (image: ProductImage, targetUrl?: string) => void;
 }
 
+const STABLE_DATE_PARTS_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'UTC',
+});
+
+const formatDateStable = (dateInput: Date | string | number) => {
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const parts = STABLE_DATE_PARTS_FORMATTER.formatToParts(date);
+    const day = parts.find(part => part.type === 'day')?.value;
+    const month = parts.find(part => part.type === 'month')?.value;
+    const year = parts.find(part => part.type === 'year')?.value;
+
+    if (!day || !month || !year) {
+        return STABLE_DATE_PARTS_FORMATTER.format(date);
+    }
+
+    return `${day}/${month}/${year}`;
+};
+
 export default function ImagePreviewModal({ image, onClose, onDownload }: ImagePreviewModalProps) {
     if (!image) return null;
 
@@ -49,11 +75,7 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                         <div>
                             <h3 className="font-semibold text-gray-900">{image.title}</h3>
                             <p className="text-sm text-gray-500">
-                                {new Date(image.createdAt).toLocaleDateString('vi-VN', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric',
-                                })}
+                                {formatDateStable(image.createdAt)}
                             </p>
                         </div>
                         <button

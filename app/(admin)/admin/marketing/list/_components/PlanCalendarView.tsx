@@ -85,34 +85,34 @@ export default function PlanCalendarView({ plan, onDayClick, selectedDate }: Pla
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-300 overflow-hidden shadow-sm">
+        <div className="bg-slate-900/80 rounded-2xl border border-slate-700 overflow-hidden shadow-[0_10px_35px_rgba(2,6,23,0.55)]">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 bg-gradient-to-r from-slate-900 to-slate-800">
                 <button
                     onClick={() => navigateMonth(-1)}
-                    className="p-2 rounded-xl hover:bg-gray-200 transition-colors border border-gray-200 bg-white"
+                    className="p-2.5 rounded-xl hover:bg-slate-700 transition-colors border border-slate-600 bg-slate-800"
                 >
-                    <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5 text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-slate-100 text-lg md:text-xl tracking-wide">
                     Tháng {currentMonth.getMonth() + 1}/{currentMonth.getFullYear()}
                 </h3>
                 <button
                     onClick={() => navigateMonth(1)}
-                    className="p-2 rounded-xl hover:bg-gray-200 transition-colors border border-gray-200 bg-white"
+                    className="p-2.5 rounded-xl hover:bg-slate-700 transition-colors border border-slate-600 bg-slate-800"
                 >
-                    <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5 text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
             </div>
 
             {/* Weekday Headers */}
-            <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+            <div className="grid grid-cols-7 border-b border-slate-700 bg-slate-800/80">
                 {WEEKDAYS.map(day => (
-                    <div key={day} className="py-2.5 text-center text-xs font-semibold text-gray-600 border-r border-gray-200 last:border-r-0">
+                    <div key={day} className="py-3 text-center text-sm font-semibold text-slate-300 border-r border-slate-700 last:border-r-0">
                         {day}
                     </div>
                 ))}
@@ -122,7 +122,7 @@ export default function PlanCalendarView({ plan, onDayClick, selectedDate }: Pla
             <div className="grid grid-cols-7 auto-rows-fr">
                 {calendarDays.map((date, index) => {
                     if (!date) {
-                        return <div key={`empty-${index}`} className="min-h-[120px] border-r border-b border-gray-200 bg-gray-50/50" />;
+                        return <div key={`empty-${index}`} className="min-h-[130px] xl:min-h-[160px] border-r border-b border-slate-700 bg-slate-900/40" />;
                     }
 
                     const posts = postsByDate.get(date.toDateString()) || [];
@@ -137,38 +137,40 @@ export default function PlanCalendarView({ plan, onDayClick, selectedDate }: Pla
                             whileHover={hasPosts ? { scale: 1.01 } : {}}
                             onClick={() => hasPosts && onDayClick(date, posts)}
                             className={cn(
-                                'min-h-[120px] border-r border-b border-gray-200 p-2 transition-all flex flex-col gap-1.5',
-                                hasPosts && 'cursor-pointer hover:bg-amber-50/70',
-                                !inRange && 'bg-gray-50 text-gray-400',
-                                selected && 'bg-amber-100/70 ring-2 ring-[#F59E0B] ring-inset'
+                                'min-h-[130px] xl:min-h-[160px] border-r border-b border-slate-700 p-3 transition-all flex flex-col gap-2',
+                                hasPosts && 'cursor-pointer hover:bg-slate-700/40',
+                                !inRange && 'bg-slate-900/40 text-slate-600',
+                                inRange && 'bg-slate-800/60',
+                                selected && 'bg-amber-500/20 ring-2 ring-amber-400 ring-inset shadow-[inset_0_0_0_1px_rgba(251,191,36,0.5)]'
                             )}
                         >
                             {/* Date number */}
                             <div className={cn(
-                                'text-xs font-semibold',
-                                date.getDay() === 0 && 'text-red-500',
-                                !inRange && 'text-gray-400'
+                                'text-sm font-bold',
+                                date.getDay() === 0 && inRange && 'text-red-300',
+                                inRange && date.getDay() !== 0 && 'text-slate-100',
+                                !inRange && 'text-slate-500'
                             )}>
                                 {date.getDate()}
                             </div>
 
                             {/* Primary topic */}
                             {hasPosts && (
-                                <div className="mt-0.5 flex-1 flex flex-col gap-1">
+                                <div className="mt-0.5 flex-1 flex flex-col gap-1.5">
                                     {primaryPost && (
-                                        <div className="rounded-md border border-gray-200 bg-white px-1.5 py-1 shadow-sm min-h-[52px]">
-                                            <div className="flex items-center gap-1 text-[10px] text-gray-500 mb-0.5">
+                                        <div className="rounded-lg border border-slate-600 bg-slate-900/90 px-2.5 py-2 shadow-md min-h-[66px]">
+                                            <div className="flex items-center gap-1.5 text-xs text-slate-300 mb-1">
                                                 <span>{getChannelIcon(primaryPost.channel)}</span>
                                                 <span className="truncate">{primaryPost.time}</span>
                                             </div>
-                                            <p className="text-[11px] leading-4 font-semibold text-gray-700 line-clamp-2">
+                                            <p className="text-sm leading-5 font-semibold text-slate-100 line-clamp-2">
                                                 {primaryPost.topic}
                                             </p>
                                         </div>
                                     )}
 
                                     {posts.length > 1 && (
-                                        <div className="text-[10px] text-[#EA580C] font-medium">
+                                        <div className="text-xs text-amber-300 font-semibold">
                                             +{posts.length - 1} nội dung
                                         </div>
                                     )}
@@ -176,7 +178,7 @@ export default function PlanCalendarView({ plan, onDayClick, selectedDate }: Pla
                             )}
 
                             {!hasPosts && inRange && (
-                                <div className="mt-auto text-[10px] text-gray-400">Chưa có chủ đề</div>
+                                <div className="mt-auto text-xs text-slate-400">Chưa có chủ đề</div>
                             )}
                         </motion.div>
                     );

@@ -27,6 +27,7 @@ export interface ColorSettings {
 export interface LanguageSettings {
     keywords: string[];
     customerTerm: string;
+    brandPronoun: string;
 }
 
 export interface ToneSettings {

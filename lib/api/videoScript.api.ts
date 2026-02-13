@@ -8,9 +8,13 @@ export interface VideoScriptInput {
     size?: string;
     hasVoiceOver?: boolean;
     otherRequirements?: string;
-    ideaMode?: 'manual' | 'ai';
+    ideaMode?: 'manual' | 'ai' | 'concept_suggestion';
     customIdea?: string;
     useBrandSettings?: boolean;
+    videoGoal?: string;
+    targetAudience?: string;
+    featuredProductService?: string;
+    selectedConceptTitle?: string;
 }
 
 export interface SceneItem {
@@ -33,7 +37,7 @@ export interface VideoScript {
     summary: string;
     scenes: SceneItem[];
     otherRequirements: string;
-    ideaMode: 'manual' | 'ai';
+    ideaMode: 'manual' | 'ai' | 'concept_suggestion';
     status: 'draft' | 'completed';
     sceneCount: number;
     createdAt: string;
@@ -63,12 +67,21 @@ export interface PaginatedResponse<T> {
 }
 
 // Generated idea structure from AI
+export type GeneratedIdeaField =
+    | string
+    | number
+    | boolean
+    | null
+    | Record<string, unknown>
+    | unknown[];
+
 export interface GeneratedIdea {
-    hook: string;
-    mainContent: string;
-    callToAction: string;
-    mood: string;
-    summary: string;
+    hook?: GeneratedIdeaField;
+    mainContent?: GeneratedIdeaField;
+    callToAction?: GeneratedIdeaField;
+    mood?: GeneratedIdeaField;
+    summary?: GeneratedIdeaField;
+    [key: string]: unknown;
 }
 
 // Input for generate idea
@@ -77,6 +90,35 @@ export interface GenerateIdeaInput {
     duration?: string;
     sceneCount?: number;
     useBrandSettings: boolean;
+    videoGoal?: string;
+    targetAudience?: string;
+    featuredProductService?: string;
+}
+
+export interface VideoConceptItem {
+    title: string;
+    hook: string;
+    coreMessage: string;
+    visualDirection: string;
+    cta: string;
+    mood: string;
+}
+
+export interface VideoConceptSuggestionResponse {
+    concepts: VideoConceptItem[];
+    recommendedApproach?: string;
+    summary?: string;
+}
+
+export interface SuggestConceptsInput {
+    title: string;
+    duration?: string;
+    sceneCount?: number;
+    videoGoal?: string;
+    targetAudience?: string;
+    featuredProductService?: string;
+    useBrandSettings?: boolean;
+    conceptCount?: number;
 }
 
 // API functions
@@ -94,6 +136,14 @@ export const videoScriptApi = {
      */
     async generateIdea(input: GenerateIdeaInput): Promise<ApiResponse<GeneratedIdea>> {
         const response = await api.post<ApiResponse<GeneratedIdea>>('/video-scripts/generate-idea', input);
+        return response.data;
+    },
+
+    /**
+     * Suggest 3-5 video concepts with AI
+     */
+    async suggestConcepts(input: SuggestConceptsInput): Promise<ApiResponse<VideoConceptSuggestionResponse>> {
+        const response = await api.post<ApiResponse<VideoConceptSuggestionResponse>>('/video-scripts/suggest-concepts', input);
         return response.data;
     },
 

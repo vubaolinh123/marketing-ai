@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import TagsInput from '@/app/(admin)/admin/settings/_components/TagsInput';
 import {
+    campaignThinkingSuggestions,
     MarketingPlanInput,
+    MarketingStrategySuggestion,
     postFrequencyOptions,
     postTimeOptions,
     goalOptions,
@@ -18,13 +19,29 @@ interface MarketingPlanFormProps {
     data: MarketingPlanInput;
     onChange: (data: MarketingPlanInput) => void;
     onSubmit: () => void;
+    onSuggestStrategy?: () => void;
+    strategySuggestion?: MarketingStrategySuggestion | null;
+    strategyLoading?: boolean;
+    onApplySuggestion?: () => void;
     isLoading?: boolean;
     useBrandSettings?: boolean;
     onBrandSettingsChange?: (value: boolean) => void;
 }
 
-export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading, useBrandSettings, onBrandSettingsChange }: MarketingPlanFormProps) {
+export default function MarketingPlanForm({
+    data,
+    onChange,
+    onSubmit,
+    onSuggestStrategy,
+    strategySuggestion,
+    strategyLoading,
+    onApplySuggestion,
+    isLoading,
+    useBrandSettings,
+    onBrandSettingsChange,
+}: MarketingPlanFormProps) {
     const canSubmit = data.campaignName && data.startDate && data.endDate && data.topics.length > 0 && data.channels.length > 0;
+    const currentSuggestion = data.strategySuggestion || strategySuggestion || null;
 
     const toggleArrayItem = (field: 'postTimes' | 'goals' | 'channels', value: string) => {
         const current = data[field];
@@ -38,6 +55,35 @@ export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading,
         if (!data.topics.includes(topic)) {
             onChange({ ...data, topics: [...data.topics, topic] });
         }
+    };
+
+    const applyCampaignThinkingChip = (
+        field: keyof Pick<MarketingPlanInput, 'priorityProductService' | 'monthlyFocus' | 'promotions' | 'customerJourneyStage' | 'targetSegment'>,
+        value: string,
+    ) => {
+        onChange({ ...data, [field]: value });
+    };
+
+    const updateStrategySuggestion = (next: MarketingStrategySuggestion) => {
+        onChange({ ...data, strategySuggestion: next });
+    };
+
+    const updateTopicMixItem = (index: number, field: 'key' | 'value', value: string) => {
+        const suggestion = currentSuggestion || {};
+        const currentTopicMix = suggestion.topicMix || [];
+        const nextTopicMix = currentTopicMix.map((item, i) => (
+            i === index ? { ...item, [field]: value } : item
+        ));
+        updateStrategySuggestion({ ...suggestion, topicMix: nextTopicMix });
+    };
+
+    const updateWeeklyFrameworkItem = (index: number, field: 'week' | 'focus' | 'sampleExecution', value: string) => {
+        const suggestion = currentSuggestion || {};
+        const currentWeekly = suggestion.weeklyFramework || [];
+        const nextWeekly = currentWeekly.map((item, i) => (
+            i === index ? { ...item, [field]: value } : item
+        ));
+        updateStrategySuggestion({ ...suggestion, weeklyFramework: nextWeekly });
     };
 
     return (
@@ -245,6 +291,352 @@ export default function MarketingPlanForm({ data, onChange, onSubmit, isLoading,
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Campaign Thinking */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white flex items-center justify-center text-sm font-bold">5</span>
+                    Campaign Thinking (tuỳ chọn)
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Sản phẩm/Dịch vụ ưu tiên</label>
+                        <input
+                            value={data.priorityProductService || ''}
+                            onChange={(e) => onChange({ ...data, priorityProductService: e.target.value })}
+                            placeholder="VD: Combo thịt bò nhập khẩu"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {campaignThinkingSuggestions.priorityProductService.map((item) => (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => applyCampaignThinkingChip('priorityProductService', item)}
+                                    className="px-2.5 py-1 rounded-full text-xs border border-gray-200 text-gray-700 hover:border-[#F59E0B] hover:bg-amber-50"
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Trọng tâm tháng</label>
+                        <input
+                            value={data.monthlyFocus || ''}
+                            onChange={(e) => onChange({ ...data, monthlyFocus: e.target.value })}
+                            placeholder="VD: Tăng nhận diện và kéo inbox"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {campaignThinkingSuggestions.monthlyFocus.map((item) => (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => applyCampaignThinkingChip('monthlyFocus', item)}
+                                    className="px-2.5 py-1 rounded-full text-xs border border-gray-200 text-gray-700 hover:border-[#F59E0B] hover:bg-amber-50"
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Chương trình khuyến mãi</label>
+                        <input
+                            value={data.promotions || ''}
+                            onChange={(e) => onChange({ ...data, promotions: e.target.value })}
+                            placeholder="VD: Giảm 20% cuối tuần"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {campaignThinkingSuggestions.promotions.map((item) => (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => applyCampaignThinkingChip('promotions', item)}
+                                    className="px-2.5 py-1 rounded-full text-xs border border-gray-200 text-gray-700 hover:border-[#F59E0B] hover:bg-amber-50"
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Giai đoạn hành trình khách hàng</label>
+                        <input
+                            value={data.customerJourneyStage || ''}
+                            onChange={(e) => onChange({ ...data, customerJourneyStage: e.target.value })}
+                            placeholder="VD: Consideration"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {campaignThinkingSuggestions.customerJourneyStage.map((item) => (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => applyCampaignThinkingChip('customerJourneyStage', item)}
+                                    className="px-2.5 py-1 rounded-full text-xs border border-gray-200 text-gray-700 hover:border-[#F59E0B] hover:bg-amber-50"
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phân khúc khách hàng mục tiêu</label>
+                        <input
+                            value={data.targetSegment || ''}
+                            onChange={(e) => onChange({ ...data, targetSegment: e.target.value })}
+                            placeholder="VD: Nữ văn phòng 25-35 tại HCM"
+                            disabled={isLoading}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {campaignThinkingSuggestions.targetSegment.map((item) => (
+                                <button
+                                    key={item}
+                                    type="button"
+                                    onClick={() => applyCampaignThinkingChip('targetSegment', item)}
+                                    className="px-2.5 py-1 rounded-full text-xs border border-gray-200 text-gray-700 hover:border-[#F59E0B] hover:bg-amber-50"
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                    <Button
+                        onClick={onSuggestStrategy}
+                        type="button"
+                        variant="secondary"
+                        isLoading={strategyLoading}
+                        disabled={isLoading || strategyLoading}
+                    >
+                        AI đề xuất chiến lược tháng
+                    </Button>
+
+                    {currentSuggestion && (
+                        <Button
+                            onClick={onApplySuggestion}
+                            type="button"
+                            variant="outline"
+                            disabled={isLoading}
+                        >
+                            Áp dụng mix đề xuất vào form
+                        </Button>
+                    )}
+                </div>
+
+                {currentSuggestion && (
+                    <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-4">
+                        <p className="text-sm font-semibold text-blue-900">AI đề xuất chiến lược tháng (có thể chỉnh sửa)</p>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-blue-700 mb-1">Summary</label>
+                            <textarea
+                                value={currentSuggestion.summary || ''}
+                                onChange={(e) => updateStrategySuggestion({ ...currentSuggestion, summary: e.target.value })}
+                                rows={2}
+                                className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-blue-700 mb-1">Concept / Campaign Concept</label>
+                            <input
+                                value={currentSuggestion.campaignConcept || currentSuggestion.concept || ''}
+                                onChange={(e) => updateStrategySuggestion({
+                                    ...currentSuggestion,
+                                    campaignConcept: e.target.value,
+                                    concept: e.target.value,
+                                })}
+                                className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-blue-700 mb-1">Content Pillars</label>
+                            <TagsInput
+                                value={currentSuggestion.contentPillars || currentSuggestion.topics || []}
+                                onChange={(value) => updateStrategySuggestion({
+                                    ...currentSuggestion,
+                                    contentPillars: value,
+                                    topics: value,
+                                })}
+                                placeholder="Nhập pillar và Enter..."
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-semibold text-blue-700">Topic Mix</label>
+                                <button
+                                    type="button"
+                                    onClick={() => updateStrategySuggestion({
+                                        ...currentSuggestion,
+                                        topicMix: [...(currentSuggestion.topicMix || []), { key: '', value: '' }],
+                                    })}
+                                    className="text-xs text-blue-700 hover:text-blue-900"
+                                >
+                                    + Thêm dòng
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {(currentSuggestion.topicMix || []).map((item, index) => (
+                                    <div key={`topic-mix-${index}`} className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <input
+                                            value={item.key}
+                                            onChange={(e) => updateTopicMixItem(index, 'key', e.target.value)}
+                                            placeholder="Nhóm chủ đề"
+                                            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        />
+                                        <input
+                                            value={item.value}
+                                            onChange={(e) => updateTopicMixItem(index, 'value', e.target.value)}
+                                            placeholder="Tỷ trọng / mô tả"
+                                            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-blue-700 mb-2">Recommended Channels</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {channelOptions.map(option => {
+                                        const selected = (currentSuggestion.recommendedChannels || currentSuggestion.channels || []).includes(option.value);
+                                        return (
+                                            <button
+                                                key={`suggest-channel-${option.value}`}
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = currentSuggestion.recommendedChannels || currentSuggestion.channels || [];
+                                                    const next = selected ? current.filter(v => v !== option.value) : [...current, option.value];
+                                                    updateStrategySuggestion({
+                                                        ...currentSuggestion,
+                                                        recommendedChannels: next,
+                                                        channels: next,
+                                                    });
+                                                }}
+                                                className={cn(
+                                                    'px-3 py-1.5 rounded-lg text-xs border transition-all',
+                                                    selected
+                                                        ? 'border-blue-500 bg-blue-100 text-blue-800'
+                                                        : 'border-blue-200 bg-white text-blue-700 hover:border-blue-300'
+                                                )}
+                                            >
+                                                {option.icon} {option.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-blue-700 mb-2">Recommended Goals</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {goalOptions.map(option => {
+                                        const selected = (currentSuggestion.recommendedGoals || currentSuggestion.goals || []).includes(option.value);
+                                        return (
+                                            <button
+                                                key={`suggest-goal-${option.value}`}
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = currentSuggestion.recommendedGoals || currentSuggestion.goals || [];
+                                                    const next = selected ? current.filter(v => v !== option.value) : [...current, option.value];
+                                                    updateStrategySuggestion({
+                                                        ...currentSuggestion,
+                                                        recommendedGoals: next,
+                                                        goals: next,
+                                                    });
+                                                }}
+                                                className={cn(
+                                                    'px-3 py-1.5 rounded-lg text-xs border transition-all',
+                                                    selected
+                                                        ? 'border-blue-500 bg-blue-100 text-blue-800'
+                                                        : 'border-blue-200 bg-white text-blue-700 hover:border-blue-300'
+                                                )}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-semibold text-blue-700">Weekly Framework</label>
+                                <button
+                                    type="button"
+                                    onClick={() => updateStrategySuggestion({
+                                        ...currentSuggestion,
+                                        weeklyFramework: [
+                                            ...(currentSuggestion.weeklyFramework || []),
+                                            { week: '', focus: '', sampleExecution: '' },
+                                        ],
+                                    })}
+                                    className="text-xs text-blue-700 hover:text-blue-900"
+                                >
+                                    + Thêm tuần
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {(currentSuggestion.weeklyFramework || []).map((item, index) => (
+                                    <div key={`weekly-framework-${index}`} className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                        <input
+                                            value={item.week}
+                                            onChange={(e) => updateWeeklyFrameworkItem(index, 'week', e.target.value)}
+                                            placeholder="Tuần"
+                                            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        />
+                                        <input
+                                            value={item.focus}
+                                            onChange={(e) => updateWeeklyFrameworkItem(index, 'focus', e.target.value)}
+                                            placeholder="Focus"
+                                            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        />
+                                        <input
+                                            value={item.sampleExecution}
+                                            onChange={(e) => updateWeeklyFrameworkItem(index, 'sampleExecution', e.target.value)}
+                                            placeholder="Sample execution"
+                                            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-blue-700 mb-1">Rationale</label>
+                            <textarea
+                                value={currentSuggestion.rationale || ''}
+                                onChange={(e) => updateStrategySuggestion({ ...currentSuggestion, rationale: e.target.value })}
+                                rows={3}
+                                className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* AI Settings Toggle */}

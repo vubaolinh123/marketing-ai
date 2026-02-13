@@ -5,9 +5,11 @@ import { useState, useRef, useEffect } from 'react';
 // Types
 interface GeminiModel {
     name: string;
+    modelId?: string;
     displayName: string;
     description: string;
     supportedGenerationMethods: string[];
+    deprecated?: boolean;
 }
 
 interface AIModelsData {
@@ -22,6 +24,38 @@ interface AIModelSettingsSectionProps {
 }
 
 type TaskType = 'text' | 'vision' | 'imageGen';
+
+const EXPLICIT_IMAGE_GEN_MODEL_IDS = new Set([
+    'gemini-2.5-flash-image',
+    'gemini-3-pro-image-preview',
+    'gemini-2.0-flash-exp-image-generation',
+]);
+
+const normalizeModelId = (value: string) => value.replace(/^models\//, '').trim();
+
+const getModelId = (model: Pick<GeminiModel, 'name' | 'modelId'>) => {
+    return normalizeModelId(model.modelId || model.name || '');
+};
+
+const isImageGenerationModel = (model: GeminiModel) => {
+    const modelId = getModelId(model).toLowerCase();
+    const methods = model.supportedGenerationMethods || [];
+    const methodsText = methods.join(' ').toLowerCase();
+    const metadata = [model.name, model.displayName, model.description, methodsText]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    return (
+        EXPLICIT_IMAGE_GEN_MODEL_IDS.has(modelId) ||
+        metadata.includes('image-generation') ||
+        metadata.includes('image generation') ||
+        metadata.includes('imagegen') ||
+        metadata.includes('imagen') ||
+        metadata.includes('generateimage') ||
+        methods.some(method => ['generateImages', 'generateImage'].includes(method))
+    );
+};
 
 // Model Recommendations Data
 const MODEL_RECOMMENDATIONS = {
@@ -70,31 +104,35 @@ const MODEL_RECOMMENDATIONS = {
     ],
     imageGen: [
         {
-            model_name: "Nano Banana",
-            model_id: "gemini-2.5-flash-preview-native-audio-dialog",
-            performance: "Fast & Efficient",
-            best_for: "Tạo ảnh nhanh, Meme, Minh họa bài viết, Storyboard",
+            model_name: "Gemini 2.5 Flash Image",
+            model_id: "gemini-2.5-flash-image",
+            performance: "High Quality & Fast",
+            best_for: "Ảnh marketing, sản phẩm, social post chất lượng cao",
+            cost: "Medium",
+            speed: "Fast",
+            badge: "Xịn",
+            note: "Khuyến nghị mặc định cho chất lượng/chi phí cân bằng",
+            recommended: true
+        },
+        {
+            model_name: "Gemini 3 Pro Image (Preview)",
+            model_id: "gemini-3-pro-image-preview",
+            performance: "Premium Quality",
+            best_for: "Visual cao cấp, concept sáng tạo, campaign quan trọng",
+            cost: "High",
+            speed: "Medium",
+            badge: "Preview",
+            note: "Model preview cho chất lượng cao nhất, dùng khi cần output premium"
+        },
+        {
+            model_name: "Gemini 2.0 Flash Image (Stable)",
+            model_id: "gemini-2.0-flash-exp-image-generation",
+            performance: "Stable & Efficient",
+            best_for: "Khối lượng lớn, luồng ổn định, fallback an toàn",
             cost: "Low",
             speed: "Very Fast",
-            note: "Tối ưu cho số lượng lớn, subject consistency tốt"
-        },
-        {
-            model_name: "Nano Banana Pro",
-            model_id: "gemini-2.5-pro-preview-native-audio-dialog",
-            performance: "Professional 4K",
-            best_for: "Logo, Ảnh Marketing, Text trong ảnh, UI Mockup",
-            cost: "High",
-            speed: "Slow (Thinking)",
-            note: "4K resolution, text rendering chuẩn"
-        },
-        {
-            model_name: "Gemini 2.0 Flash Image",
-            model_id: "gemini-2.0-flash-exp-image-generation",
-            performance: "Experimental",
-            best_for: "Test tính năng, Prototype nhanh",
-            cost: "Free/Low",
-            speed: "Fast",
-            recommended: true
+            badge: "Ổn định",
+            note: "Fallback khi model mới chưa khả dụng"
         }
     ]
 };
@@ -117,6 +155,11 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
     // Open dropdown state
     const [openDropdown, setOpenDropdown] = useState<TaskType | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [inlineError, setInlineError] = useState<Record<TaskType, string | null>>({
+        text: null,
+        vision: null,
+        imageGen: null,
+    });
 
     // Refs for click outside detection
     const dropdownRefs = useRef<Record<TaskType, HTMLDivElement | null>>({
@@ -141,9 +184,9 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
     }, [openDropdown]);
 
     // Fetch models from Next.js API route
-    const fetchModels = async (taskType: TaskType) => {
+    const fetchModels = async (taskType: TaskType): Promise<GeminiModel[]> => {
         if (modelCache[taskType].length > 0) {
-            return;
+            return modelCache[taskType];
         }
 
         try {
@@ -170,16 +213,17 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
                     break;
                 case 'imageGen':
                     filteredModels = models.filter(m =>
-                        m.name.includes('image') ||
-                        m.supportedGenerationMethods?.includes('generateContent')
+                        isImageGenerationModel(m)
                     );
                     break;
             }
 
             setModelCache(prev => ({ ...prev, [taskType]: filteredModels }));
+            return filteredModels;
         } catch (err) {
             console.error('Failed to fetch models:', err);
             setError(err instanceof Error ? err.message : 'Lỗi kết nối');
+            return [];
         } finally {
             setLoadingStates(prev => ({ ...prev, [taskType]: false }));
         }
@@ -192,6 +236,7 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
     };
 
     const toggleDropdown = async (taskType: TaskType) => {
+        setInlineError(prev => ({ ...prev, [taskType]: null }));
         if (openDropdown === taskType) {
             setOpenDropdown(null);
         } else {
@@ -201,19 +246,37 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
     };
 
     const selectModel = (taskType: TaskType, modelId: string, fieldKey: keyof AIModelsData) => {
+        setInlineError(prev => ({ ...prev, [taskType]: null }));
         onChange({ ...data, [fieldKey]: modelId });
         setOpenDropdown(null);
-    };
-
-    const getModelId = (fullName: string) => {
-        return fullName.replace('models/', '');
     };
 
     const getDisplayName = (taskType: TaskType, value: string) => {
         if (!value) return 'Chọn model...';
         const models = modelCache[taskType];
-        const model = models.find(m => getModelId(m.name) === value);
+        const model = models.find(m => getModelId(m) === value);
         return model?.displayName || value;
+    };
+
+    const applyRecommendation = async (
+        taskType: TaskType,
+        fieldKey: keyof AIModelsData,
+        modelId: string
+    ) => {
+        setInlineError(prev => ({ ...prev, [taskType]: null }));
+        const normalizedModelId = normalizeModelId(modelId);
+        const models = await fetchModels(taskType);
+        const hasModel = models.some(model => getModelId(model) === normalizedModelId);
+
+        if (!hasModel) {
+            setInlineError(prev => ({
+                ...prev,
+                [taskType]: `Model "${normalizedModelId}" hiện không có trong danh sách khả dụng.`,
+            }));
+            return;
+        }
+
+        onChange({ ...data, [fieldKey]: normalizedModelId });
     };
 
     const renderRecommendations = (taskType: TaskType, fieldKey: keyof AIModelsData) => {
@@ -228,7 +291,7 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
                         <button
                             key={rec.model_id}
                             type="button"
-                            onClick={() => onChange({ ...data, [fieldKey]: rec.model_id })}
+                            onClick={() => applyRecommendation(taskType, fieldKey, rec.model_id)}
                             className={`group relative px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive
                                 ? 'bg-amber-100 text-amber-800 ring-2 ring-amber-400'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -240,6 +303,11 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
                                     <span className="text-amber-500">⭐</span>
                                 )}
                                 {rec.model_name}
+                                {'badge' in rec && (
+                                    <span className="px-1.5 py-0.5 rounded bg-gray-200 text-[10px] text-gray-700">
+                                        {rec.badge}
+                                    </span>
+                                )}
                             </span>
 
                             {/* Tooltip */}
@@ -249,13 +317,19 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
                                     <div>📊 {rec.performance}</div>
                                     <div>✨ {rec.best_for}</div>
                                     {'token_cost' in rec && <div>💰 Token: {rec.token_cost}</div>}
+                                    {'cost' in rec && <div>💰 Cost: {rec.cost}</div>}
                                     {'speed' in rec && <div>⚡ {rec.speed}</div>}
+                                    {'note' in rec && <div>📝 {rec.note}</div>}
                                 </div>
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                             </div>
                         </button>
                     );
                 })}
+
+                {inlineError[taskType] && (
+                    <p className="w-full text-xs text-red-600">{inlineError[taskType]}</p>
+                )}
             </div>
         );
     };
@@ -271,6 +345,9 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
         const models = modelCache[taskType];
         const isLoading = loadingStates[taskType];
         const isOpen = openDropdown === taskType;
+        const selectedModelInvalid = Boolean(
+            value && models.length > 0 && !models.some(model => getModelId(model) === value)
+        );
 
         return (
             <div className="space-y-2">
@@ -281,22 +358,29 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
                             {label}
                         </label>
                     </div>
-                    <button
-                        type="button"
-                        onClick={(e) => refreshModels(taskType, e)}
-                        disabled={isLoading}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
-                        title="Làm mới danh sách"
-                    >
-                        <svg
-                            className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                    <div className="flex items-center gap-2">
+                        {selectedModelInvalid && (
+                            <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium">
+                                Model hiện tại không khả dụng
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={(e) => refreshModels(taskType, e)}
+                            disabled={isLoading}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+                            title="Làm mới danh sách"
                         >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </button>
+                            <svg
+                                className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Quick Recommendations */}
@@ -315,8 +399,8 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
                             : 'border-gray-200 hover:border-gray-300'
                             }`}
                     >
-                        <span className={value ? 'text-gray-800' : 'text-gray-400'}>
-                            {value || 'Hoặc chọn model khác...'}
+                        <span className={value ? 'text-gray-800' : 'text-gray-400 truncate pr-2'}>
+                            {value ? getDisplayName(taskType, value) : 'Hoặc chọn model khác...'}
                         </span>
                         <div className="flex items-center gap-2">
                             {isLoading ? (
@@ -355,7 +439,7 @@ export default function AIModelSettingsSection({ data, onChange }: AIModelSettin
                                     </div>
                                 ) : (
                                     models.map((model) => {
-                                        const modelId = getModelId(model.name);
+                                        const modelId = getModelId(model);
                                         const isSelected = value === modelId;
 
                                         return (

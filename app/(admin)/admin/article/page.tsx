@@ -82,7 +82,9 @@ export default function ArticlePage() {
                 wordCount: formData.wordCount,
                 description: formData.description,
                 imageUrl: uploadedImageUrl,
-                useBrandSettings: formData.useBrandSettings
+                useBrandSettings: formData.useBrandSettings,
+                writingStyle: formData.writingStyle,
+                storytellingDepth: formData.storytellingDepth,
             });
 
             // Set generated article data
@@ -154,6 +156,8 @@ export default function ArticlePage() {
                 `- Mục đích: ${articleFormData.purpose}`,
                 `- Mô tả: ${articleFormData.description}`,
                 `- Độ dài mong muốn: ${articleFormData.wordCount} từ`,
+                `- Phong cách viết: ${articleFormData.writingStyle}`,
+                `- Độ sâu storytelling: ${articleFormData.storytellingDepth}`,
             ].join('\n');
 
             const additionalNotes = imageFormData.additionalNotes?.trim()
@@ -170,7 +174,14 @@ export default function ArticlePage() {
                 logoPosition: imageFormData.logoPosition,
                 outputSize: imageFormData.outputSize,
                 additionalNotes,
-                useBrandSettings: imageFormData.useBrandSettings
+                useBrandSettings: imageFormData.useBrandSettings,
+                usagePurpose: imageFormData.usagePurpose,
+                displayInfo: imageFormData.displayInfo,
+                adIntensity: imageFormData.adIntensity,
+                typographyGuidance: imageFormData.typographyGuidance,
+                targetAudience: imageFormData.targetAudience,
+                visualStyle: imageFormData.visualStyle,
+                realismPriority: imageFormData.realismPriority,
             });
 
             if (!imageResponse.success || !imageResponse.data) {
@@ -204,7 +215,9 @@ export default function ArticlePage() {
                 description: articleFormData.description,
                 imageUrl: generatedImageUrls[0],
                 imageUrls: generatedImageUrls,
-                useBrandSettings: articleFormData.useBrandSettings
+                useBrandSettings: articleFormData.useBrandSettings,
+                writingStyle: articleFormData.writingStyle,
+                storytellingDepth: articleFormData.storytellingDepth,
             });
 
             const article: GeneratedArticle = {

@@ -53,7 +53,55 @@ export interface ImageGenerationInput {
     outputSize: string;
     additionalNotes: string;
     useBrandSettings: boolean;
+    usagePurpose?: string;
+    displayInfo?: string;
+    adIntensity?: string;
+    typographyGuidance?: string;
+    targetAudience?: string;
+    visualStyle?: string;
+    realismPriority?: string;
 }
+
+export const usagePurposeSuggestions = [
+    'Nội dung mạng xã hội',
+    'Quảng cáo chuyển đổi',
+    'Banner website',
+    'Sàn thương mại điện tử',
+    'Poster in-store',
+];
+
+export const displayInfoSuggestions = [
+    'Giá bán + ưu đãi',
+    'USP nổi bật',
+    'Thông điệp ngắn 3-5 từ',
+    'Tên sản phẩm + công dụng',
+];
+
+export const adIntensitySuggestions = ['low', 'medium', 'high'];
+
+export const typographyGuidanceSuggestions = [
+    'Không chữ',
+    'Headline đậm, rõ',
+    'Tối giản, ít chữ',
+    'Phong cách premium',
+];
+
+export const targetAudienceSuggestions = [
+    'Gen Z thành thị',
+    'Nhân viên văn phòng',
+    'Mẹ bỉm bận rộn',
+    'Khách hàng cao cấp',
+];
+
+export const visualStyleSuggestions = [
+    'Photorealistic',
+    'Minimal clean',
+    'Luxury editorial',
+    'Bold commercial',
+    'Lifestyle candid',
+];
+
+export const realismPrioritySuggestions = ['high', 'balanced', 'stylized'];
 
 export interface GeneratedImage {
     id: string;
@@ -95,6 +143,13 @@ export const defaultImageInput: ImageGenerationInput = {
     outputSize: '1:1',
     additionalNotes: '',
     useBrandSettings: true,
+    usagePurpose: 'Nội dung mạng xã hội',
+    displayInfo: '',
+    adIntensity: 'medium',
+    typographyGuidance: '',
+    targetAudience: '',
+    visualStyle: 'Photorealistic',
+    realismPriority: 'high',
 };
 
 // Image List Item for list page

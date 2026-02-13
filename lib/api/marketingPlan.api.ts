@@ -18,8 +18,29 @@ export interface MarketingPlanRequest {
     topics: string[];
     goals: string[];
     channels: string[];
+    priorityProductService?: string;
+    monthlyFocus?: string;
+    promotions?: string;
+    customerJourneyStage?: string;
+    targetSegment?: string;
+    strategySuggestion?: MarketingStrategySuggestion;
     notes: string;
     useBrandSettings?: boolean;
+}
+
+export interface MarketingStrategySuggestion {
+    summary?: string;
+    concept?: string;
+    campaignConcept?: string;
+    contentPillars?: string[];
+    topicMix?: Array<{ key: string; value: string }>;
+    recommendedChannels?: string[];
+    recommendedGoals?: string[];
+    weeklyFramework?: Array<{ week: string; focus: string; sampleExecution: string }>;
+    rationale?: string;
+    topics?: string[];
+    goals?: string[];
+    channels?: string[];
 }
 
 export interface MarketingPost {
@@ -49,6 +70,12 @@ export interface MarketingPlan {
     topics?: string[];
     goals?: string[];
     channels?: string[];
+    priorityProductService?: string;
+    monthlyFocus?: string;
+    promotions?: string;
+    customerJourneyStage?: string;
+    targetSegment?: string;
+    strategySuggestion?: MarketingStrategySuggestion;
     notes?: string;
     useBrandSettings?: boolean;
     status?: 'active' | 'completed' | 'draft';
@@ -77,6 +104,16 @@ export async function generateMarketingPlan(data: MarketingPlanRequest): Promise
     // Extended timeout for AI generation (up to 2 minutes)
     const response = await api.post('/marketing-plan/generate', data, {
         timeout: 120000  // 120 seconds
+    });
+    return response.data.data;
+}
+
+/**
+ * Suggest monthly marketing strategy mix
+ */
+export async function suggestMarketingStrategy(data: MarketingPlanRequest): Promise<MarketingStrategySuggestion> {
+    const response = await api.post('/marketing-plan/suggest-strategy', data, {
+        timeout: 120000,
     });
     return response.data.data;
 }

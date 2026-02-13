@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { fakeTopics, purposeOptions } from '@/lib/fakeData';
+import { fakeTopics } from '@/lib/fakeData';
 import { getImageUrl, type Article } from '@/lib/api';
 
 interface ArticleCardProps {
@@ -14,7 +14,7 @@ interface ArticleCardProps {
 
 export default function ArticleCard({ article, onClick, onEdit, onDelete, index }: ArticleCardProps) {
     const topicLabel = fakeTopics.find(t => t.value === article.topic)?.label || article.topic;
-    const purposeOption = purposeOptions.find(p => p.value === article.purpose);
+    const purposeLabel = article.purpose;
 
     const formatDate = (date: string) => {
         return new Intl.DateTimeFormat('vi-VN', {
@@ -90,7 +90,7 @@ export default function ArticleCard({ article, onClick, onEdit, onDelete, index 
                             {topicLabel}
                         </span>
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                            {purposeOption?.icon} {purposeOption?.label}
+                            {purposeLabel}
                         </span>
                         {/* Status Badge */}
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${article.status === 'published'

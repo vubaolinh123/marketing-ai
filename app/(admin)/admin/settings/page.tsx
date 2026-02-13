@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { settingsApi, AISettings } from '@/lib/api';
+import { settingsApi } from '@/lib/api';
 import { showSuccess, showError } from '@/lib/toast';
 
 // Dynamic imports
@@ -32,6 +32,7 @@ interface BrandData {
     language: {
         keywords: string[];
         customerTerm: string;
+        brandPronoun: string;
     };
     tone: {
         overallTone: string[];
@@ -52,6 +53,120 @@ interface BrandData {
     };
 }
 
+interface GeminiModel {
+    name?: string;
+    modelId?: string;
+    supportedGenerationMethods?: string[];
+    displayName?: string;
+    description?: string;
+    deprecated?: boolean;
+}
+
+const IMAGE_GEN_EXPLICIT_IDS = new Set([
+    'gemini-2.5-flash-image',
+    'gemini-3-pro-image-preview',
+    'gemini-2.0-flash-exp-image-generation',
+]);
+
+const normalizeModelId = (value: string) => value.replace(/^models\//, '').trim();
+
+const getModelId = (model: GeminiModel) => normalizeModelId(model.modelId || model.name || '');
+
+const isImageGenerationModel = (model: GeminiModel) => {
+    const modelId = getModelId(model).toLowerCase();
+    const methods = model.supportedGenerationMethods || [];
+    const methodsText = methods.join(' ').toLowerCase();
+    const metadata = [model.name, model.displayName, model.description, methodsText]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    return (
+        IMAGE_GEN_EXPLICIT_IDS.has(modelId) ||
+        metadata.includes('image-generation') ||
+        metadata.includes('image generation') ||
+        metadata.includes('imagegen') ||
+        metadata.includes('imagen') ||
+        metadata.includes('generateimage') ||
+        methods.some(method => ['generateImages', 'generateImage'].includes(method))
+    );
+};
+
+const sanitizeModelSelection = (
+    currentValue: string | undefined,
+    defaultValue: string,
+    allowedModelIds: Set<string>
+) => {
+    const normalizedCurrent = normalizeModelId(currentValue || '');
+    if (!normalizedCurrent) return defaultValue;
+
+    if (allowedModelIds.size === 0) {
+        return /native-audio-dialog/i.test(normalizedCurrent) ? defaultValue : normalizedCurrent;
+    }
+
+    return allowedModelIds.has(normalizedCurrent) ? normalizedCurrent : defaultValue;
+};
+
+const pickImageGenFallback = (allowedModelIds: Set<string>) => {
+    const preferredOrder = [
+        'gemini-2.5-flash-image',
+        'gemini-3-pro-image-preview',
+        'gemini-2.0-flash-exp-image-generation',
+    ];
+
+    for (const modelId of preferredOrder) {
+        if (allowedModelIds.has(modelId)) return modelId;
+    }
+
+    return defaultData.aiModels.imageGenModel;
+};
+
+const sanitizeAiModels = (incoming: Partial<BrandData['aiModels']> | undefined, models: GeminiModel[]) => {
+    const textAllowed = new Set(
+        models
+            .filter(model => model.supportedGenerationMethods?.includes('generateContent'))
+            .map(getModelId)
+            .filter(Boolean)
+    );
+
+    const visionAllowed = new Set(
+        models
+            .filter(model => model.supportedGenerationMethods?.includes('generateContent'))
+            .map(getModelId)
+            .filter(Boolean)
+    );
+
+    const imageAllowed = new Set(
+        models
+            .filter(isImageGenerationModel)
+            .map(getModelId)
+            .filter(Boolean)
+    );
+
+    const imageDefault = pickImageGenFallback(imageAllowed);
+
+    return {
+        textModel: sanitizeModelSelection(incoming?.textModel, defaultData.aiModels.textModel, textAllowed),
+        visionModel: sanitizeModelSelection(incoming?.visionModel, defaultData.aiModels.visionModel, visionAllowed),
+        imageGenModel: sanitizeModelSelection(incoming?.imageGenModel, imageDefault, imageAllowed),
+    };
+};
+
+const fetchGeminiModels = async (): Promise<GeminiModel[]> => {
+    try {
+        const response = await fetch('/api/gemini-models');
+        const result = await response.json();
+
+        if (!result.success || !Array.isArray(result.models)) {
+            return [];
+        }
+
+        return result.models as GeminiModel[];
+    } catch {
+        return [];
+    }
+};
+
 const defaultData: BrandData = {
     logo: {
         brandName: '',
@@ -67,6 +182,7 @@ const defaultData: BrandData = {
     language: {
         keywords: [],
         customerTerm: '',
+        brandPronoun: '',
     },
     tone: {
         overallTone: [],
@@ -83,7 +199,7 @@ const defaultData: BrandData = {
     aiModels: {
         textModel: 'gemini-2.5-flash',
         visionModel: 'gemini-2.0-flash',
-        imageGenModel: 'gemini-2.0-flash-exp-image-generation',
+        imageGenModel: 'gemini-2.5-flash-image',
     },
 };
 
@@ -164,7 +280,10 @@ export default function BrandSettingsPage() {
         const fetchSettings = async () => {
             try {
                 setIsLoading(true);
-                const response = await settingsApi.get();
+                const [response, availableModels] = await Promise.all([
+                    settingsApi.get(),
+                    fetchGeminiModels(),
+                ]);
 
                 if (response.success && response.data) {
                     const settings = response.data;
@@ -182,7 +301,8 @@ export default function BrandSettingsPage() {
                         },
                         language: {
                             keywords: settings.language?.keywords || [],
-                            customerTerm: settings.language?.customerTerm || ''
+                            customerTerm: settings.language?.customerTerm || '',
+                            brandPronoun: settings.language?.brandPronoun || ''
                         },
                         tone: {
                             overallTone: settings.tone?.overallTone || [],
@@ -197,9 +317,7 @@ export default function BrandSettingsPage() {
                             facebookToken: settings.facebook?.facebookToken || ''
                         },
                         aiModels: {
-                            textModel: settings.aiModels?.textModel || 'gemini-2.5-flash',
-                            visionModel: settings.aiModels?.visionModel || 'gemini-2.0-flash',
-                            imageGenModel: settings.aiModels?.imageGenModel || 'gemini-2.0-flash-exp-image-generation'
+                            ...sanitizeAiModels(settings.aiModels, availableModels)
                         }
                     });
                 }

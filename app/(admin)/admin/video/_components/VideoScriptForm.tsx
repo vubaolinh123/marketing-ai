@@ -6,17 +6,21 @@ import Link from 'next/link';
 import { sizeOptions, durationOptions } from '@/lib/fakeData';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { settingsApi, videoScriptApi, GeneratedIdea } from '@/lib/api';
+import { settingsApi, videoScriptApi, GeneratedIdea, VideoConceptItem } from '@/lib/api';
 
 export interface VideoScriptFormData {
     duration: string;
     sceneCount: number;
     size: string;
     title: string;
+    videoGoal: string;
+    targetAudience: string;
+    featuredProductService: string;
     hasVoiceOver: boolean;
     otherRequirements: string;
-    ideaMode: 'manual' | 'ai';
+    ideaMode: 'manual' | 'ai' | 'concept_suggestion';
     customIdea: string;
+    selectedConceptTitle?: string;
     useBrandSettings: boolean;
 }
 
@@ -28,6 +32,89 @@ interface VideoScriptFormProps {
 // Quick select options for scene count
 const sceneCountOptions = [4, 6, 8, 10, 12];
 
+type NormalizedGeneratedIdea = {
+    hook: string;
+    mainContent: string;
+    callToAction: string;
+    mood: string;
+    summary: string;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const formatKeyLabel = (key: string): string => {
+    const withSpaces = key
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/[_-]+/g, ' ')
+        .trim();
+
+    return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
+};
+
+const normalizeIdeaField = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => {
+                const itemText = normalizeIdeaField(item);
+                if (!itemText) return '';
+
+                const lines = itemText.split('\n');
+                if (lines.length === 1) return `- ${lines[0]}`;
+
+                return [`- ${lines[0]}`, ...lines.slice(1).map((line) => `  ${line}`)].join('\n');
+            })
+            .filter(Boolean)
+            .join('\n');
+    }
+
+    if (isRecord(value)) {
+        return Object.entries(value)
+            .map(([key, nestedValue]) => {
+                const nestedText = normalizeIdeaField(nestedValue);
+                const label = formatKeyLabel(key);
+
+                if (!nestedText) return `- ${label}`;
+
+                const lines = nestedText.split('\n');
+                if (lines.length === 1) return `- ${label}: ${lines[0]}`;
+
+                return [`- ${label}:`, ...lines.map((line) => `  ${line}`)].join('\n');
+            })
+            .filter(Boolean)
+            .join('\n');
+    }
+
+    return '';
+};
+
+const normalizeGeneratedIdea = (idea: GeneratedIdea | null | undefined): NormalizedGeneratedIdea => ({
+    hook: normalizeIdeaField(idea?.hook),
+    mainContent: normalizeIdeaField(idea?.mainContent),
+    callToAction: normalizeIdeaField(idea?.callToAction),
+    mood: normalizeIdeaField(idea?.mood),
+    summary: normalizeIdeaField(idea?.summary),
+});
+
+const IdeaFieldBlock = ({ label, value }: { label: string; value: string }) => (
+    <div className="space-y-1">
+        <p className="text-xs font-semibold text-purple-700">{label}</p>
+        {value ? (
+            <pre className="whitespace-pre-wrap rounded-md border border-purple-100 bg-white/80 px-3 py-2 text-sm text-gray-700 font-sans leading-5">
+                {value}
+            </pre>
+        ) : (
+            <p className="text-sm text-gray-400">-</p>
+        )}
+    </div>
+);
+
 
 
 export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptFormProps) {
@@ -36,14 +123,23 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
         sceneCount: 6,
         size: '',
         title: '',
+        videoGoal: '',
+        targetAudience: '',
+        featuredProductService: '',
         hasVoiceOver: true,
         otherRequirements: '',
         ideaMode: 'ai',
         customIdea: '',
+        selectedConceptTitle: '',
         useBrandSettings: false,
     });
     const [generatingIdea, setGeneratingIdea] = useState(false);
-    const [generatedIdea, setGeneratedIdea] = useState<GeneratedIdea | null>(null);
+    const [generatedIdea, setGeneratedIdea] = useState<NormalizedGeneratedIdea | null>(null);
+    const [suggestingConcepts, setSuggestingConcepts] = useState(false);
+    const [suggestedConcepts, setSuggestedConcepts] = useState<VideoConceptItem[]>([]);
+    const [selectedConceptIndex, setSelectedConceptIndex] = useState<number | null>(null);
+    const [conceptSummary, setConceptSummary] = useState<string>('');
+    const [recommendedApproach, setRecommendedApproach] = useState<string>('');
 
     // Brand settings states
     const [hasBrandSettings, setHasBrandSettings] = useState(false);
@@ -67,11 +163,24 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
         checkSettings();
     }, []);
 
-    // Check if can generate idea
-    const canGenerateIdea = formData.useBrandSettings && formData.title.trim().length > 0;
+    // Check if can generate idea/concepts
+    const canUseAiAssist =
+        formData.useBrandSettings &&
+        formData.title.trim().length > 0 &&
+        formData.videoGoal.trim().length > 0 &&
+        formData.targetAudience.trim().length > 0 &&
+        formData.featuredProductService.trim().length > 0;
+
+    const aiMissingRequirements = [
+        !formData.useBrandSettings ? 'Bật thông tin thương hiệu' : null,
+        !formData.title.trim() ? 'Tiêu đề/chủ đề video' : null,
+        !formData.videoGoal.trim() ? 'Mục tiêu video' : null,
+        !formData.targetAudience.trim() ? 'Đối tượng mục tiêu' : null,
+        !formData.featuredProductService.trim() ? 'Sản phẩm/dịch vụ nổi bật' : null,
+    ].filter(Boolean) as string[];
 
     const handleGenerateIdea = useCallback(async () => {
-        if (!canGenerateIdea) return;
+        if (!canUseAiAssist) return;
 
         setGeneratingIdea(true);
         setGeneratedIdea(null);
@@ -80,28 +189,101 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
                 title: formData.title,
                 duration: formData.duration,
                 sceneCount: formData.sceneCount,
-                useBrandSettings: formData.useBrandSettings
+                useBrandSettings: formData.useBrandSettings,
+                videoGoal: formData.videoGoal,
+                targetAudience: formData.targetAudience,
+                featuredProductService: formData.featuredProductService
             });
             if (response.success && response.data) {
-                setGeneratedIdea(response.data);
-                // Set summary as customIdea for the script generation
-                setFormData(prev => ({ ...prev, customIdea: response.data.summary }));
+                const normalizedIdea = normalizeGeneratedIdea(response.data);
+                const nextCustomIdea = [normalizedIdea.summary, normalizedIdea.mainContent]
+                    .filter(Boolean)
+                    .join('\n\n');
+
+                setGeneratedIdea(normalizedIdea);
+                // Set normalized summary/content as customIdea for the script generation
+                setFormData(prev => ({ ...prev, customIdea: nextCustomIdea, selectedConceptTitle: '' }));
             }
         } catch (error) {
             console.error('Error generating idea:', error);
         } finally {
             setGeneratingIdea(false);
         }
-    }, [canGenerateIdea, formData.title, formData.duration, formData.sceneCount, formData.useBrandSettings]);
+    }, [canUseAiAssist, formData.title, formData.duration, formData.sceneCount, formData.useBrandSettings, formData.videoGoal, formData.targetAudience, formData.featuredProductService]);
+
+    const handleSuggestConcepts = useCallback(async () => {
+        if (!canUseAiAssist) return;
+
+        setSuggestingConcepts(true);
+        setSuggestedConcepts([]);
+        setSelectedConceptIndex(null);
+        setConceptSummary('');
+        setRecommendedApproach('');
+
+        try {
+            const response = await videoScriptApi.suggestConcepts({
+                title: formData.title,
+                duration: formData.duration,
+                sceneCount: formData.sceneCount,
+                videoGoal: formData.videoGoal,
+                targetAudience: formData.targetAudience,
+                featuredProductService: formData.featuredProductService,
+                useBrandSettings: formData.useBrandSettings,
+                conceptCount: 5,
+            });
+
+            if (response.success && response.data) {
+                setSuggestedConcepts(response.data.concepts || []);
+                setConceptSummary(response.data.summary || '');
+                setRecommendedApproach(response.data.recommendedApproach || '');
+            }
+        } catch (error) {
+            console.error('Error suggesting concepts:', error);
+        } finally {
+            setSuggestingConcepts(false);
+        }
+    }, [canUseAiAssist, formData.title, formData.duration, formData.sceneCount, formData.videoGoal, formData.targetAudience, formData.featuredProductService, formData.useBrandSettings]);
+
+    const applySelectedConcept = useCallback(() => {
+        if (selectedConceptIndex === null) return;
+        const concept = suggestedConcepts[selectedConceptIndex];
+        if (!concept) return;
+
+        const combinedIdea = [
+            `Concept: ${concept.title}`,
+            `Hook: ${concept.hook}`,
+            `Thông điệp chính: ${concept.coreMessage}`,
+            `Hướng hình ảnh: ${concept.visualDirection}`,
+            `CTA: ${concept.cta}`,
+            `Mood: ${concept.mood}`,
+        ].join('\n');
+
+        setFormData(prev => ({
+            ...prev,
+            customIdea: combinedIdea,
+            selectedConceptTitle: concept.title,
+        }));
+    }, [selectedConceptIndex, suggestedConcepts]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (formData.title) {
+        if (
+            formData.title.trim() &&
+            formData.videoGoal.trim() &&
+            formData.targetAudience.trim() &&
+            formData.featuredProductService.trim() &&
+            (formData.customIdea.trim() || formData.selectedConceptTitle?.trim())
+        ) {
             onSubmit(formData);
         }
     };
 
-    const isValid = formData.title.trim();
+    const isValid =
+        formData.title.trim() &&
+        formData.videoGoal.trim() &&
+        formData.targetAudience.trim() &&
+        formData.featuredProductService.trim() &&
+        (formData.customIdea.trim() || formData.selectedConceptTitle?.trim());
 
     return (
         <motion.form
@@ -281,143 +463,106 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
                 />
             </div>
 
-            {/* Row 4: Idea Mode Selection */}
+            {/* Row 4: Business Context */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Mục tiêu video <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.videoGoal}
+                        onChange={(e) => setFormData({ ...formData, videoGoal: e.target.value })}
+                        placeholder="VD: Tăng nhận diện thương hiệu / chốt đơn sản phẩm mới"
+                        disabled={isLoading}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Đối tượng mục tiêu <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.targetAudience}
+                        onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+                        placeholder="VD: Nữ 22-30, dân văn phòng"
+                        disabled={isLoading}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Sản phẩm / dịch vụ nổi bật <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.featuredProductService}
+                        onChange={(e) => setFormData({ ...formData, featuredProductService: e.target.value })}
+                        placeholder="VD: Combo steak signature"
+                        disabled={isLoading}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
+                    />
+                </div>
+            </div>
+
+            {/* Row 5: Idea Mode Selection */}
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-5 border border-purple-100">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Tóm tắt ý tưởng kịch bản
+                    Tóm tắt ý tưởng kịch bản <span className="text-red-500">*</span>
                 </label>
 
                 {/* Mode Toggle */}
-                <div className="flex gap-3 mb-4">
-                    <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, ideaMode: 'ai' })}
-                        disabled={isLoading}
-                        className={cn(
-                            'flex-1 px-4 py-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2',
-                            formData.ideaMode === 'ai'
-                                ? 'border-purple-500 bg-purple-500 text-white shadow-lg'
-                                : 'border-gray-200 text-gray-500 hover:border-purple-200 bg-white'
-                        )}
-                    >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        AI tạo ý tưởng
-                    </button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                     <button
                         type="button"
                         onClick={() => setFormData({ ...formData, ideaMode: 'manual' })}
                         disabled={isLoading}
                         className={cn(
-                            'flex-1 px-4 py-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2',
+                            'px-4 py-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 text-sm',
                             formData.ideaMode === 'manual'
                                 ? 'border-purple-500 bg-purple-500 text-white shadow-lg'
                                 : 'border-gray-200 text-gray-500 hover:border-purple-200 bg-white'
                         )}
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
                         Tự nhập ý tưởng
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, ideaMode: 'ai' })}
+                        disabled={isLoading}
+                        className={cn(
+                            'px-4 py-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 text-sm',
+                            formData.ideaMode === 'ai'
+                                ? 'border-purple-500 bg-purple-500 text-white shadow-lg'
+                                : 'border-gray-200 text-gray-500 hover:border-purple-200 bg-white'
+                        )}
+                    >
+                        AI tạo 1 ý tưởng nhanh
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, ideaMode: 'concept_suggestion' })}
+                        disabled={isLoading}
+                        className={cn(
+                            'px-4 py-3 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 text-sm',
+                            formData.ideaMode === 'concept_suggestion'
+                                ? 'border-purple-500 bg-purple-500 text-white shadow-lg'
+                                : 'border-gray-200 text-gray-500 hover:border-purple-200 bg-white'
+                        )}
+                    >
+                        AI đề xuất 3-5 concept
                     </button>
                 </div>
 
-                {/* Content based on mode */}
+                {!canUseAiAssist && formData.ideaMode !== 'manual' && (
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-700 mb-3">
+                        ⚠️ Để dùng AI, vui lòng hoàn thiện: <strong>{aiMissingRequirements.join(', ')}</strong>
+                    </div>
+                )}
+
                 <AnimatePresence mode="wait">
-                    {formData.ideaMode === 'ai' ? (
-                        <motion.div
-                            key="ai"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="space-y-3"
-                        >
-                            {/* Warning if cannot generate */}
-                            {!canGenerateIdea && (
-                                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm">
-                                    {!formData.useBrandSettings ? (
-                                        <p className="text-amber-700">
-                                            ⚠️ Vui lòng <strong>bật &quot;Sử dụng thông tin thương hiệu&quot;</strong> ở trên để AI có thể tạo ý tưởng.
-                                        </p>
-                                    ) : (
-                                        <p className="text-amber-700">
-                                            ⚠️ Vui lòng <strong>nhập tiêu đề/chủ đề video</strong> để AI biết được nội dung cần tạo.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={handleGenerateIdea}
-                                disabled={isLoading || generatingIdea || !canGenerateIdea}
-                                className={cn(
-                                    "px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2",
-                                    canGenerateIdea
-                                        ? "bg-white border border-purple-200 text-purple-600 hover:bg-purple-50"
-                                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                )}
-                            >
-                                {generatingIdea ? (
-                                    <>
-                                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                        </svg>
-                                        Đang tạo ý tưởng với AI...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
-                                        Tạo ý tưởng với AI
-                                    </>
-                                )}
-                            </button>
-
-                            {/* Show editable idea after AI generates */}
-                            {generatedIdea && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="space-y-3"
-                                >
-                                    {/* Collapsible structured preview */}
-                                    <details className="p-3 rounded-lg bg-purple-50 border border-purple-100">
-                                        <summary className="cursor-pointer text-sm font-medium text-purple-700 flex items-center gap-2">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            Xem chi tiết ý tưởng AI đã tạo
-                                        </summary>
-                                        <div className="mt-3 grid gap-2 text-sm">
-                                            <p><strong>🎣 Hook:</strong> {generatedIdea.hook}</p>
-                                            <p><strong>📝 Nội dung:</strong> {generatedIdea.mainContent}</p>
-                                            <p><strong>🎯 CTA:</strong> {generatedIdea.callToAction}</p>
-                                            <p><strong>🎭 Mood:</strong> {generatedIdea.mood}</p>
-                                        </div>
-                                    </details>
-
-                                    {/* Editable textarea */}
-                                    <div>
-                                        <label className="text-xs text-gray-500 mb-1 block">
-                                            ✏️ Bạn có thể chỉnh sửa tóm tắt bên dưới:
-                                        </label>
-                                        <textarea
-                                            value={formData.customIdea}
-                                            onChange={(e) => setFormData({ ...formData, customIdea: e.target.value })}
-                                            placeholder="Tóm tắt ý tưởng kịch bản..."
-                                            rows={4}
-                                            disabled={isLoading}
-                                            className="w-full px-4 py-3 rounded-xl border border-purple-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none transition-all"
-                                        />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </motion.div>
-                    ) : (
+                    {formData.ideaMode === 'manual' && (
                         <motion.div
                             key="manual"
                             initial={{ opacity: 0, y: 10 }}
@@ -427,11 +572,163 @@ export default function VideoScriptForm({ onSubmit, isLoading }: VideoScriptForm
                             <textarea
                                 value={formData.customIdea}
                                 onChange={(e) => setFormData({ ...formData, customIdea: e.target.value })}
-                                placeholder="Nhập tóm tắt ý tưởng kịch bản của bạn...&#10;VD: Host ngồi tại quán, bất ngờ bị thùng carton rơi trúng đầu → tạo hook hài hước. Sau đó giới thiệu các món ăn nổi bật..."
-                                rows={4}
+                                placeholder="Nhập tóm tắt ý tưởng kịch bản của bạn..."
+                                rows={5}
                                 disabled={isLoading}
                                 className="w-full px-4 py-3 rounded-xl border border-purple-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none transition-all"
                             />
+                        </motion.div>
+                    )}
+
+                    {formData.ideaMode === 'ai' && (
+                        <motion.div
+                            key="ai"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-3"
+                        >
+                            <button
+                                type="button"
+                                onClick={handleGenerateIdea}
+                                disabled={isLoading || generatingIdea || !canUseAiAssist}
+                                className={cn(
+                                    'px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2',
+                                    canUseAiAssist
+                                        ? 'bg-white border border-purple-200 text-purple-600 hover:bg-purple-50'
+                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                )}
+                            >
+                                {generatingIdea ? 'Đang tạo ý tưởng với AI...' : 'Tạo ý tưởng với AI'}
+                            </button>
+
+                            {generatedIdea && (
+                                <details className="p-3 rounded-lg bg-purple-50 border border-purple-100">
+                                    <summary className="cursor-pointer text-sm font-medium text-purple-700">
+                                        Xem chi tiết ý tưởng AI đã tạo
+                                    </summary>
+                                    <div className="mt-3 grid gap-2 text-sm">
+                                        <IdeaFieldBlock label="📌 Summary" value={generatedIdea.summary} />
+                                        <IdeaFieldBlock label="🎣 Hook" value={generatedIdea.hook} />
+                                        <IdeaFieldBlock label="📝 Nội dung" value={generatedIdea.mainContent} />
+                                        <IdeaFieldBlock label="🎯 CTA" value={generatedIdea.callToAction} />
+                                        <IdeaFieldBlock label="🎭 Mood" value={generatedIdea.mood} />
+                                    </div>
+                                </details>
+                            )}
+
+                            <textarea
+                                value={formData.customIdea}
+                                onChange={(e) => setFormData({ ...formData, customIdea: e.target.value })}
+                                placeholder="Tóm tắt ý tưởng kịch bản..."
+                                rows={5}
+                                disabled={isLoading}
+                                className="w-full px-4 py-3 rounded-xl border border-purple-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none transition-all"
+                            />
+                        </motion.div>
+                    )}
+
+                    {formData.ideaMode === 'concept_suggestion' && (
+                        <motion.div
+                            key="concept"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-4"
+                        >
+                            <button
+                                type="button"
+                                onClick={handleSuggestConcepts}
+                                disabled={isLoading || suggestingConcepts || !canUseAiAssist}
+                                className={cn(
+                                    'px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2',
+                                    canUseAiAssist
+                                        ? 'bg-white border border-purple-200 text-purple-600 hover:bg-purple-50'
+                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                )}
+                            >
+                                {suggestingConcepts ? 'Đang tạo concept...' : 'Tạo 3-5 concept'}
+                            </button>
+
+                            {conceptSummary && (
+                                <div className="p-3 rounded-lg bg-white border border-purple-100 text-sm text-gray-700">
+                                    <strong>Tóm tắt:</strong> {conceptSummary}
+                                </div>
+                            )}
+                            {recommendedApproach && (
+                                <div className="p-3 rounded-lg bg-white border border-purple-100 text-sm text-gray-700">
+                                    <strong>Đề xuất hướng triển khai:</strong> {recommendedApproach}
+                                </div>
+                            )}
+
+                            {suggestedConcepts.length > 0 && (
+                                <div className="grid grid-cols-1 gap-3">
+                                    {suggestedConcepts.map((concept, index) => {
+                                        const selected = selectedConceptIndex === index;
+                                        return (
+                                            <button
+                                                key={`${concept.title}-${index}`}
+                                                type="button"
+                                                onClick={() => setSelectedConceptIndex(index)}
+                                                className={cn(
+                                                    'text-left p-4 rounded-xl border transition-all bg-white',
+                                                    selected
+                                                        ? 'border-purple-500 ring-2 ring-purple-200'
+                                                        : 'border-gray-200 hover:border-purple-300'
+                                                )}
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <h4 className="font-semibold text-gray-900">{concept.title}</h4>
+                                                    <span className={cn(
+                                                        'w-4 h-4 rounded-full border-2 mt-1 flex-shrink-0',
+                                                        selected ? 'border-purple-500 bg-purple-500' : 'border-gray-300'
+                                                    )} />
+                                                </div>
+                                                <p className="text-sm text-gray-600 mt-2"><strong>Hook:</strong> {concept.hook}</p>
+                                                <p className="text-sm text-gray-600 mt-1"><strong>Core:</strong> {concept.coreMessage}</p>
+                                                <p className="text-sm text-gray-600 mt-1"><strong>Visual:</strong> {concept.visualDirection}</p>
+                                                <p className="text-sm text-gray-600 mt-1"><strong>CTA:</strong> {concept.cta}</p>
+                                                <p className="text-sm text-gray-600 mt-1"><strong>Mood:</strong> {concept.mood}</p>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={applySelectedConcept}
+                                    disabled={selectedConceptIndex === null || isLoading}
+                                    className={cn(
+                                        'px-4 py-2 rounded-lg font-medium transition-all',
+                                        selectedConceptIndex !== null
+                                            ? 'bg-purple-600 text-white hover:bg-purple-700'
+                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    )}
+                                >
+                                    Dùng concept này
+                                </button>
+                                {formData.selectedConceptTitle && (
+                                    <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
+                                        Đã áp dụng: {formData.selectedConceptTitle}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500 mb-1 block">
+                                    ✏️ Bạn có thể chỉnh sửa tự do sau khi áp dụng concept:
+                                </label>
+                                <textarea
+                                    value={formData.customIdea}
+                                    onChange={(e) => setFormData({ ...formData, customIdea: e.target.value })}
+                                    placeholder="Tóm tắt ý tưởng kịch bản..."
+                                    rows={5}
+                                    disabled={isLoading}
+                                    className="w-full px-4 py-3 rounded-xl border border-purple-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none transition-all"
+                                />
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

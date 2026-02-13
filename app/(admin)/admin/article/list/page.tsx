@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { getArticles, deleteArticle, type Article } from '@/lib/api';
+import { getArticles, getArticle, deleteArticle, type Article } from '@/lib/api';
 import toast from '@/lib/toast';
 import type { FilterState } from './_components';
+
+type DetailMode = 'view' | 'edit' | 'regenerate';
 
 // Dynamic imports
 const ArticleFilters = dynamic(() => import('./_components/ArticleFilters'), { ssr: false });
@@ -33,9 +35,10 @@ export default function ArticleListPage() {
         isOpen: false,
         article: null,
     });
-    const [detailModal, setDetailModal] = useState<{ isOpen: boolean; article: Article | null }>({
+    const [detailModal, setDetailModal] = useState<{ isOpen: boolean; article: Article | null; initialMode: DetailMode }>({
         isOpen: false,
         article: null,
+        initialMode: 'view',
     });
 
     // Fetch articles from API
@@ -75,14 +78,26 @@ export default function ArticleListPage() {
         setCurrentPage(1);
     }, []);
 
-    // Open detail modal when clicking on card
-    const handleCardClick = useCallback((article: Article) => {
-        setDetailModal({ isOpen: true, article });
+    const handleOpenDetail = useCallback(async (id: string, initialMode: DetailMode = 'view') => {
+        toast.loading('Đang tải chi tiết bài viết...', { id: 'article-detail-loading' });
+        try {
+            const fullArticle = await getArticle(id);
+            setDetailModal({ isOpen: true, article: fullArticle, initialMode });
+            toast.dismiss('article-detail-loading');
+        } catch (error) {
+            console.error('Failed to fetch article detail:', error);
+            toast.error('Không thể tải chi tiết bài viết', { id: 'article-detail-loading' });
+        }
     }, []);
 
+    // Open detail modal when clicking on card
+    const handleCardClick = useCallback((article: Article) => {
+        handleOpenDetail(article._id, 'view');
+    }, [handleOpenDetail]);
+
     const handleEdit = useCallback((id: string) => {
-        alert(`Chức năng chỉnh sửa bài viết ${id} sẽ được phát triển!`);
-    }, []);
+        handleOpenDetail(id, 'edit');
+    }, [handleOpenDetail]);
 
     const handleDelete = useCallback((id: string) => {
         const article = articles.find(a => a._id === id);
@@ -105,6 +120,11 @@ export default function ArticleListPage() {
             setDeleteModal({ isOpen: false, article: null });
         }
     }, [deleteModal.article, fetchArticles]);
+
+    const handleArticleUpdated = useCallback((updatedArticle: Article) => {
+        setArticles((prev) => prev.map((item) => (item._id === updatedArticle._id ? updatedArticle : item)));
+        setDetailModal((prev) => ({ ...prev, article: updatedArticle }));
+    }, []);
 
     // Loading skeleton
     const LoadingSkeleton = () => (
@@ -228,8 +248,10 @@ export default function ArticleListPage() {
             {/* Article Detail Modal */}
             <ArticleDetailModal
                 isOpen={detailModal.isOpen}
-                onClose={() => setDetailModal({ isOpen: false, article: null })}
+                onClose={() => setDetailModal({ isOpen: false, article: null, initialMode: 'view' })}
                 article={detailModal.article}
+                initialMode={detailModal.initialMode}
+                onArticleUpdated={handleArticleUpdated}
             />
         </div>
     );

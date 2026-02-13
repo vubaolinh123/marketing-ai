@@ -24,6 +24,23 @@ interface PlanCardProps {
     index: number;
 }
 
+const STABLE_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+});
+
+const formatDateStable = (dateInput: Date | string | number) => {
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return STABLE_DATE_FORMATTER.format(date);
+};
+
 export default function PlanCard({ plan, onView, onDuplicate, onDelete, index }: PlanCardProps) {
     const statusInfo = statusOptions.find(s => s.value === plan.status);
 
@@ -52,7 +69,7 @@ export default function PlanCard({ plan, onView, onDuplicate, onDelete, index }:
                 <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 truncate">{plan.campaignName}</h3>
                     <p className="text-sm text-gray-500 mt-1">
-                        {plan.startDate.toLocaleDateString('vi-VN')} - {plan.endDate.toLocaleDateString('vi-VN')}
+                        {formatDateStable(plan.startDate)} - {formatDateStable(plan.endDate)}
                     </p>
                 </div>
                 <span className={cn(
@@ -114,7 +131,7 @@ export default function PlanCard({ plan, onView, onDuplicate, onDelete, index }:
 
             {/* Created date */}
             <p className="text-xs text-gray-400 mt-3 text-right">
-                Tạo: {plan.createdAt.toLocaleDateString('vi-VN')}
+                Tạo: {formatDateStable(plan.createdAt)}
             </p>
         </motion.div>
     );

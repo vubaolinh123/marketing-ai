@@ -31,14 +31,46 @@ export default function AIImagePage() {
 
     const selectedAngles = formData.cameraAngles?.length > 0 ? formData.cameraAngles : ['wide'];
 
+    const extractErrorMessage = (err: unknown, fallback: string) => {
+        if (!err || typeof err !== 'object') {
+            return fallback;
+        }
+
+        const candidate = err as {
+            message?: string;
+            statusCode?: number;
+            response?: { data?: { message?: string } };
+        };
+
+        if (candidate.response?.data?.message) {
+            return candidate.response.data.message;
+        }
+
+        if (candidate.message) {
+            return candidate.statusCode ? `${candidate.message} (Mã lỗi: ${candidate.statusCode})` : candidate.message;
+        }
+
+        return fallback;
+    };
+
     const handleSubmit = useCallback(async () => {
         if (formData.images.length === 0) {
             setError('Vui lòng upload ảnh sản phẩm');
             return;
         }
 
+        if (formData.images[0].size > 10 * 1024 * 1024) {
+            setError('Ảnh vượt quá 10MB. Vui lòng chọn file nhỏ hơn 10MB.');
+            return;
+        }
+
         if (!selectedAngles.length) {
             setError('Vui lòng chọn ít nhất 1 góc máy');
+            return;
+        }
+
+        if (formData.backgroundType === 'custom' && !formData.customBackground.trim()) {
+            setError('Vui lòng nhập mô tả background tùy chỉnh');
             return;
         }
 
@@ -62,7 +94,14 @@ export default function AIImagePage() {
                 logoPosition: formData.logoPosition,
                 outputSize: formData.outputSize,
                 additionalNotes: formData.additionalNotes,
-                useBrandSettings: formData.useBrandSettings
+                useBrandSettings: formData.useBrandSettings,
+                usagePurpose: formData.usagePurpose,
+                displayInfo: formData.displayInfo,
+                adIntensity: formData.adIntensity,
+                typographyGuidance: formData.typographyGuidance,
+                targetAudience: formData.targetAudience,
+                visualStyle: formData.visualStyle,
+                realismPriority: formData.realismPriority,
             });
 
             if (response.success && response.data) {
@@ -73,7 +112,7 @@ export default function AIImagePage() {
             }
         } catch (err: unknown) {
             console.error('Generate error:', err);
-            const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tạo ảnh AI';
+            const errorMessage = extractErrorMessage(err, 'Lỗi khi tạo ảnh AI');
             setError(errorMessage);
             setCurrentStep('form');
         } finally {
@@ -110,7 +149,7 @@ export default function AIImagePage() {
             }
         } catch (err: unknown) {
             console.error('Regenerate error:', err);
-            const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tạo lại ảnh AI';
+            const errorMessage = extractErrorMessage(err, 'Lỗi khi tạo lại ảnh AI');
             setError(errorMessage);
             setCurrentStep('result'); // Go back to result to show error
         } finally {

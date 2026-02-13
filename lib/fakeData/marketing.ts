@@ -38,7 +38,39 @@ export interface MarketingPlanInput {
     topics: string[];
     goals: string[];
     channels: string[];
+    priorityProductService?: string;
+    monthlyFocus?: string;
+    promotions?: string;
+    customerJourneyStage?: string;
+    targetSegment?: string;
+    strategySuggestion?: MarketingStrategySuggestion;
     notes: string;
+}
+
+export interface StrategyTopicMixItem {
+    key: string;
+    value: string;
+}
+
+export interface StrategyWeeklyFrameworkItem {
+    week: string;
+    focus: string;
+    sampleExecution: string;
+}
+
+export interface MarketingStrategySuggestion {
+    summary?: string;
+    concept?: string;
+    campaignConcept?: string;
+    contentPillars?: string[];
+    topicMix?: StrategyTopicMixItem[];
+    recommendedChannels?: string[];
+    recommendedGoals?: string[];
+    weeklyFramework?: StrategyWeeklyFrameworkItem[];
+    rationale?: string;
+    topics?: string[];
+    goals?: string[];
+    channels?: string[];
 }
 
 export interface PlanPost {
@@ -74,7 +106,46 @@ export const defaultPlanInput: MarketingPlanInput = {
     topics: [],
     goals: [],
     channels: ['facebook'],
+    priorityProductService: '',
+    monthlyFocus: '',
+    promotions: '',
+    customerJourneyStage: '',
+    targetSegment: '',
+    strategySuggestion: undefined,
     notes: '',
+};
+
+export const campaignThinkingSuggestions = {
+    priorityProductService: [
+        'Combo mới ra mắt',
+        'Dịch vụ flagship',
+        'Sản phẩm biên lợi nhuận cao',
+        'Sản phẩm mùa vụ',
+    ],
+    monthlyFocus: [
+        'Ra mắt - tạo nhận biết',
+        'Đẩy lead và tư vấn',
+        'Chốt đơn - chuyển đổi',
+        'Giữ chân khách cũ',
+    ],
+    promotions: [
+        'Giảm 20% cuối tuần',
+        'Mua 2 tặng 1',
+        'Freeship đơn từ 299K',
+        'Voucher khách hàng mới',
+    ],
+    customerJourneyStage: [
+        'Awareness',
+        'Consideration',
+        'Conversion',
+        'Retention',
+    ],
+    targetSegment: [
+        'Gen Z thành thị',
+        'Nhân viên văn phòng 25-35',
+        'Gia đình trẻ',
+        'Khách hàng cao cấp',
+    ],
 };
 
 // Generate fake plan result based on input

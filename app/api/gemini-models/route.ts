@@ -7,6 +7,17 @@ import { NextResponse } from 'next/server';
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
+type GeminiApiModel = {
+    name?: string;
+    displayName?: string;
+    description?: string;
+    supportedGenerationMethods?: string[];
+    deprecated?: boolean;
+    [key: string]: unknown;
+};
+
+const normalizeModelId = (name: string) => name.replace(/^models\//, '').trim();
+
 export async function GET() {
     try {
         const apiKey = process.env.API_KEY_GEMINI;
@@ -25,10 +36,25 @@ export async function GET() {
         }
 
         const data = await response.json();
+        const rawModels = Array.isArray(data.models) ? (data.models as GeminiApiModel[]) : [];
+
+        const normalizedModels = rawModels
+            .filter((model) => {
+                if (!model?.name || typeof model.name !== 'string') return false;
+                if (typeof model.deprecated === 'boolean') {
+                    return !model.deprecated;
+                }
+                return true;
+            })
+            .map((model) => ({
+                ...model,
+                modelId: normalizeModelId(model.name as string),
+            }));
 
         return NextResponse.json({
             success: true,
-            models: data.models || []
+            models: normalizedModels,
+            rawModels
         });
     } catch (error) {
         console.error('Gemini models fetch error:', error);

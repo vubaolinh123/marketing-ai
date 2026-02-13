@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -69,7 +69,7 @@ const menuItems: MenuItem[] = [
         ],
     },
     {
-        label: 'Cài Đặt Content AI',
+        label: 'Cài đặt thương hiệu',
         href: '/admin/settings',
         icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -83,6 +83,20 @@ const menuItems: MenuItem[] = [
 export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSidebarProps) {
     const pathname = usePathname();
     const [expandedItems, setExpandedItems] = useState<string[]>(['Bài viết']);
+    const [mounted, setMounted] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+
+        const mediaQuery = window.matchMedia('(max-width: 767px)');
+        const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+
+        updateIsMobile();
+
+        mediaQuery.addEventListener('change', updateIsMobile);
+        return () => mediaQuery.removeEventListener('change', updateIsMobile);
+    }, []);
 
     const toggleExpand = (label: string) => {
         setExpandedItems(prev =>
@@ -106,6 +120,12 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
         return pathname === href || pathname?.startsWith(href + '/');
     };
 
+    const sidebarX = !mounted
+        ? 0
+        : isMobile && !isOpen
+            ? -280
+            : 0;
+
     return (
         <>
             {/* Mobile Backdrop */}
@@ -126,7 +146,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                 initial={false}
                 animate={{
                     width: isCollapsed ? 72 : 280,
-                    x: isOpen ? 0 : (typeof window !== 'undefined' && window.innerWidth < 768) ? -280 : 0
+                    x: sidebarX
                 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 className={cn(

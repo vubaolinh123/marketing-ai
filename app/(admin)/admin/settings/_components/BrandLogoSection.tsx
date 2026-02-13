@@ -30,6 +30,17 @@ export default function BrandLogoSection({ data, onChange }: BrandLogoSectionPro
         onChange({ ...data, resourceLinks: updated });
     };
 
+    const getFileNameFromUrl = (url: string) => {
+        if (!url) return '';
+        try {
+            const cleanUrl = url.split('?')[0];
+            const parts = cleanUrl.split('/');
+            return decodeURIComponent(parts[parts.length - 1] || url);
+        } catch {
+            return url;
+        }
+    };
+
     const removeResourceLink = (index: number) => {
         onChange({ ...data, resourceLinks: (data.resourceLinks || []).filter((_, i) => i !== index) });
     };
@@ -234,7 +245,7 @@ Trả lời ngắn gọn, súc tích, mỗi ý 1-2 câu.`
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-gray-700">
-                        Tài nguyên hình ảnh / Link tham khảo
+                        Tài nguyên thương hiệu đã upload
                     </label>
                     <button
                         type="button"
@@ -244,11 +255,11 @@ Trả lời ngắn gọn, súc tích, mỗi ý 1-2 câu.`
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Thêm link
+                        Thêm tài nguyên
                     </button>
                 </div>
                 <p className="text-xs text-gray-500 mb-3">
-                    Thêm các link hình ảnh, tài liệu tham khảo cho AI (Google Drive, Dropbox, v.v.)
+                    AI sẽ dùng các tài nguyên đã upload để học ngữ cảnh thương hiệu.
                 </p>
                 <div className="space-y-3">
                     {(data.resourceLinks || []).map((link, index) => (
@@ -267,13 +278,23 @@ Trả lời ngắn gọn, súc tích, mỗi ý 1-2 câu.`
                                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
                                 />
                                 <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={link.url}
-                                        onChange={(e) => updateResourceLink(index, 'url', e.target.value)}
-                                        placeholder="https://... hoặc upload file"
-                                        className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
-                                    />
+                                    <div className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
+                                        {link.url ? (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium truncate">{getFileNameFromUrl(link.url)}</p>
+                                                <a
+                                                    href={link.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-xs text-blue-600 hover:underline break-all"
+                                                >
+                                                    {link.url}
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-400">Chưa upload tài nguyên</p>
+                                        )}
+                                    </div>
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -299,7 +320,27 @@ Trả lời ngắn gọn, súc tích, mỗi ý 1-2 câu.`
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                             </svg>
                                         )}
+                                        <span className="text-sm">Upload</span>
                                     </label>
+                                    {link.url && (
+                                        <button
+                                            type="button"
+                                            onClick={() => navigator.clipboard.writeText(link.url)}
+                                            className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm"
+                                        >
+                                            Copy
+                                        </button>
+                                    )}
+                                    {link.url && (
+                                        <a
+                                            href={link.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm"
+                                        >
+                                            Mở
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                             <button
@@ -315,13 +356,13 @@ Trả lời ngắn gọn, súc tích, mỗi ý 1-2 câu.`
                     ))}
                     {data.resourceLinks.length === 0 && (
                         <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                            <p className="text-sm text-gray-400 mb-2">Chưa có link tài nguyên nào</p>
+                            <p className="text-sm text-gray-400 mb-2">Chưa có tài nguyên nào được upload</p>
                             <button
                                 type="button"
                                 onClick={addResourceLink}
                                 className="text-sm text-[#F59E0B] hover:text-amber-600 font-medium"
                             >
-                                + Thêm link đầu tiên
+                                + Thêm tài nguyên đầu tiên
                             </button>
                         </div>
                     )}

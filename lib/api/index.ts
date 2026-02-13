@@ -39,7 +39,10 @@ export type {
     SceneItem,
     VideoScriptListItem,
     GeneratedIdea,
-    GenerateIdeaInput
+    GenerateIdeaInput,
+    VideoConceptItem,
+    VideoConceptSuggestionResponse,
+    SuggestConceptsInput
 } from './videoScript.api';
 
 // Product Image API
@@ -51,3 +54,6 @@ export type {
     ProductImageResponse,
     ProductImageListParams
 } from './productImage.api';
+
+// Marketing Plan API
+export * from './marketingPlan.api';

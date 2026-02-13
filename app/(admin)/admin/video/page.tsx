@@ -33,7 +33,11 @@ export default function VideoScriptPage() {
                 otherRequirements: data.otherRequirements,
                 ideaMode: data.ideaMode,
                 customIdea: data.customIdea,
-                useBrandSettings: data.useBrandSettings
+                useBrandSettings: data.useBrandSettings,
+                videoGoal: data.videoGoal || undefined,
+                targetAudience: data.targetAudience || undefined,
+                featuredProductService: data.featuredProductService || undefined,
+                selectedConceptTitle: data.selectedConceptTitle || undefined,
             });
 
             if (response.success && response.data) {

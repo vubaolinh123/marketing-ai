@@ -7,6 +7,7 @@ interface BrandLanguageSectionProps {
     data: {
         keywords: string[];
         customerTerm: string;
+        brandPronoun: string;
     };
     onChange: (data: BrandLanguageSectionProps['data']) => void;
 }
@@ -18,6 +19,14 @@ const suggestedCustomerTerms = [
     'Khách hàng',
     'Thực khách',
     'Bạn bè',
+];
+
+const suggestedBrandPronouns = [
+    'Mình',
+    'Bên mình',
+    'Chúng tôi',
+    'Team',
+    'Shop em',
 ];
 
 const suggestedKeywords = [
@@ -113,6 +122,41 @@ export default function BrandLanguageSection({ data, onChange }: BrandLanguageSe
                                 )}
                             >
                                 {term}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Brand Pronoun */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cách thương hiệu xưng hô
+                </label>
+                <input
+                    type="text"
+                    value={data.brandPronoun}
+                    onChange={(e) => onChange({ ...data, brandPronoun: e.target.value })}
+                    placeholder="VD: Mình, Bên mình, Chúng tôi..."
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
+                />
+
+                <div className="mt-3">
+                    <p className="text-xs text-gray-500 mb-2">Gợi ý nhanh:</p>
+                    <div className="flex flex-wrap gap-2">
+                        {suggestedBrandPronouns.map((pronoun) => (
+                            <button
+                                key={pronoun}
+                                type="button"
+                                onClick={() => onChange({ ...data, brandPronoun: pronoun })}
+                                className={cn(
+                                    'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
+                                    data.brandPronoun === pronoun
+                                        ? 'border-[#F59E0B] bg-amber-50 text-[#F59E0B]'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#F59E0B] hover:text-[#F59E0B]'
+                                )}
+                            >
+                                {pronoun}
                             </button>
                         ))}
                     </div>

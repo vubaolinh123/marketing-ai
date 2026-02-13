@@ -15,6 +15,12 @@ export const purposeOptions = [
     { value: 'introduce', label: 'Giới thiệu', icon: '📢' },
     { value: 'sell', label: 'Bán hàng', icon: '🛒' },
     { value: 'share_knowledge', label: 'Chia sẻ kiến thức', icon: '📚' },
+    { value: 'brand_awareness', label: 'Nhận diện thương hiệu', icon: '🌟' },
+    { value: 'attract_leads', label: 'Thu hút khách tiềm năng', icon: '🧲' },
+    { value: 'nurture_educate', label: 'Nuôi dưỡng & giáo dục', icon: '🎓' },
+    { value: 'convert_sales', label: 'Chuyển đổi bán hàng', icon: '💸' },
+    { value: 'retention_loyalty', label: 'Giữ chân & trung thành', icon: '🤝' },
+    { value: 'brand_positioning', label: 'Định vị thương hiệu', icon: '📍' },
 ];
 
 export interface GeneratedArticle {
@@ -162,11 +168,12 @@ export interface ArticleListItem {
 
 // Generate fake article list with 50 items
 export const fakeArticleList: ArticleListItem[] = Array.from({ length: 50 }, (_, i) => {
-    const purposes = ['introduce', 'sell', 'share_knowledge'];
+    const purposes = purposeOptions.map((option) => option.value);
     const topics = fakeTopics.map(t => t.value);
     const purpose = purposes[i % purposes.length];
     const topic = topics[i % topics.length];
-    const article = fakeArticlesByPurpose[purpose][i % 2];
+    const articlePool = fakeArticlesByPurpose[purpose] || fakeArticlesByPurpose.introduce;
+    const article = articlePool[i % articlePool.length];
 
     return {
         id: `article-${i + 1}`,

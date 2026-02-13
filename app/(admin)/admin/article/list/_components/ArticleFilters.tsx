@@ -1,7 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { fakeTopics, purposeOptions } from '@/lib/fakeData';
+import { fakeTopics } from '@/lib/fakeData';
+
+const purposeSuggestions = [
+    'Brand Awareness',
+    'Attract Leads',
+    'Nurture & Educate',
+    'Convert / Sales',
+    'Retention & Loyalty',
+    'Brand Positioning',
+];
 
 export interface FilterState {
     topic: string;
@@ -77,18 +86,25 @@ export default function ArticleFilters({ filters, onFiltersChange }: ArticleFilt
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                         Mục đích
                     </label>
-                    <select
+                    <input
+                        type="text"
                         value={filters.purpose}
                         onChange={(e) => onFiltersChange({ ...filters, purpose: e.target.value })}
+                        placeholder="Nhập mục đích..."
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent transition-all"
-                    >
-                        <option value="">Tất cả mục đích</option>
-                        {purposeOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.icon} {option.label}
-                            </option>
+                    />
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                        {purposeSuggestions.map((preset) => (
+                            <button
+                                key={preset}
+                                type="button"
+                                onClick={() => onFiltersChange({ ...filters, purpose: preset })}
+                                className="px-2 py-1 rounded-full text-[11px] border border-gray-200 text-gray-600 hover:border-[#F59E0B] hover:bg-amber-50"
+                            >
+                                {preset}
+                            </button>
                         ))}
-                    </select>
+                    </div>
                 </div>
 
                 {/* Status */}

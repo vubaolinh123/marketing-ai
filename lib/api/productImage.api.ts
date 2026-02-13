@@ -16,6 +16,13 @@ export interface ProductImageInput {
     additionalNotes?: string;
     useBrandSettings?: boolean;
     title?: string;
+    usagePurpose?: string;
+    displayInfo?: string;
+    adIntensity?: string;
+    typographyGuidance?: string;
+    targetAudience?: string;
+    visualStyle?: string;
+    realismPriority?: string;
 }
 
 export interface ProductImage {

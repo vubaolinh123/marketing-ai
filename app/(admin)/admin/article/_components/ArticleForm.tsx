@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { purposeOptions } from '@/lib/fakeData';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { settingsApi } from '@/lib/api';
@@ -14,7 +13,22 @@ export interface ArticleFormData {
     wordCount: number;
     description: string;
     useBrandSettings: boolean;
+    writingStyle: 'sales' | 'lifestyle' | 'technical' | 'balanced';
+    storytellingDepth: 'low' | 'medium' | 'high';
 }
+
+const writingStyleOptions = [
+    { value: 'sales' as const, label: 'Bán hàng', description: 'Nhịp nhanh, rõ ý, CTA mạnh' },
+    { value: 'lifestyle' as const, label: 'Đời sống/văn hoá', description: 'Trầm, có hình ảnh, hơi thở người thật' },
+    { value: 'technical' as const, label: 'Kỹ thuật', description: 'Rõ ràng, tuần tự' },
+    { value: 'balanced' as const, label: 'Cân bằng', description: 'Phối hợp linh hoạt' },
+];
+
+const storytellingDepthOptions = [
+    { value: 'low' as const, label: 'Thấp' },
+    { value: 'medium' as const, label: 'Vừa' },
+    { value: 'high' as const, label: 'Cao' },
+];
 
 // Word count options
 const wordCountOptions = [
@@ -37,6 +51,8 @@ export default function ArticleForm({ onSubmit, isLoading, submitLabel = 'Tạo 
         wordCount: 250,
         description: '',
         useBrandSettings: false,
+        writingStyle: 'balanced',
+        storytellingDepth: 'medium',
     });
 
     // Brand settings states
@@ -156,37 +172,44 @@ export default function ArticleForm({ onSubmit, isLoading, submitLabel = 'Tạo 
                 />
             </div>
 
-            {/* Purpose Radio */}
+            {/* Purpose Input (free-text + optional presets) */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                     Mục đích bài viết
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {purposeOptions.map((option) => (
-                        <motion.button
-                            key={option.value}
+                <textarea
+                    value={formData.purpose}
+                    onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                    placeholder="Ví dụ: Tăng nhận diện thương hiệu cho món mới và kéo tương tác Facebook"
+                    rows={3}
+                    disabled={isLoading}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent resize-none transition-all"
+                />
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {[
+                        'Brand Awareness',
+                        'Attract Leads',
+                        'Nurture & Educate',
+                        'Convert / Sales',
+                        'Retention & Loyalty',
+                        'Brand Positioning'
+                    ].map((preset) => (
+                        <button
+                            key={preset}
                             type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setFormData({ ...formData, purpose: option.value })}
+                            onClick={() => setFormData({ ...formData, purpose: preset })}
                             disabled={isLoading}
-                            className={cn(
-                                'p-4 rounded-xl border-2 transition-all duration-200 text-left',
-                                formData.purpose === option.value
-                                    ? 'border-[#F59E0B] bg-amber-50'
-                                    : 'border-gray-200 bg-white hover:border-gray-300'
-                            )}
+                            className="px-3 py-1.5 rounded-full text-xs font-medium border border-gray-200 text-gray-700 hover:border-[#F59E0B] hover:text-[#B45309] hover:bg-amber-50 transition-all"
                         >
-                            <span className="text-2xl mb-2 block">{option.icon}</span>
-                            <span className={cn(
-                                'font-medium',
-                                formData.purpose === option.value ? 'text-[#F59E0B]' : 'text-gray-700'
-                            )}>
-                                {option.label}
-                            </span>
-                        </motion.button>
+                            {preset}
+                        </button>
                     ))}
                 </div>
+
+                <p className="mt-1 text-xs text-gray-500">
+                    Bạn có thể nhập tự do theo mục tiêu content, không bị giới hạn theo danh sách có sẵn.
+                </p>
             </div>
 
             {/* Word Count Input */}
@@ -235,6 +258,66 @@ export default function ArticleForm({ onSubmit, isLoading, submitLabel = 'Tạo 
                             </motion.button>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* Writing controls */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phong cách viết
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {writingStyleOptions.map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, writingStyle: option.value })}
+                                disabled={isLoading}
+                                className={cn(
+                                    'p-3 rounded-xl border text-left transition-all',
+                                    formData.writingStyle === option.value
+                                        ? 'border-[#F59E0B] bg-amber-50'
+                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                )}
+                            >
+                                <p className={cn(
+                                    'text-sm font-medium',
+                                    formData.writingStyle === option.value ? 'text-[#B45309]' : 'text-gray-800'
+                                )}>
+                                    {option.label}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Độ sâu storytelling
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                        {storytellingDepthOptions.map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, storytellingDepth: option.value })}
+                                disabled={isLoading}
+                                className={cn(
+                                    'px-3 py-2 rounded-lg text-sm font-medium border transition-all',
+                                    formData.storytellingDepth === option.value
+                                        ? 'bg-[#F59E0B] text-white border-[#F59E0B]'
+                                        : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300'
+                                )}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                        Chọn mức độ kể chuyện để AI điều chỉnh chiều sâu nội dung.
+                    </p>
                 </div>
             </div>
 

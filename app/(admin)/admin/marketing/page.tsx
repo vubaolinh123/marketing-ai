@@ -8,10 +8,11 @@ import { showSuccess, showError } from '@/lib/toast';
 import {
     MarketingPlanInput,
     MarketingPlanResult,
+    MarketingStrategySuggestion,
     PlanPost,
     defaultPlanInput,
 } from '@/lib/fakeData/marketing';
-import { generateMarketingPlan, MarketingPlan } from '@/lib/api/marketingPlan.api';
+import { generateMarketingPlan, MarketingPlan, suggestMarketingStrategy } from '@/lib/api/marketingPlan.api';
 
 // Dynamic imports
 const MarketingPlanForm = dynamic(() => import('./_components/MarketingPlanForm'), { ssr: false });
@@ -51,12 +52,150 @@ function convertApiToResult(apiPlan: MarketingPlan): MarketingPlanResult {
     };
 }
 
+const toCleanString = (value: unknown): string => {
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    return '';
+};
+
+const toStringArray = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => toCleanString(item))
+            .filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+        return value
+            .split(/[,;\n]/)
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>)
+            .map((item) => toCleanString(item))
+            .filter(Boolean);
+    }
+
+    return [];
+};
+
+const toTopicMix = (value: unknown): Array<{ key: string; value: string }> => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item, index) => {
+                if (item && typeof item === 'object') {
+                    const obj = item as Record<string, unknown>;
+                    const key = toCleanString(obj.key ?? obj.pillar ?? obj.topic ?? obj.name) || `Nhóm ${index + 1}`;
+                    const mixValue = toCleanString(obj.value ?? obj.ratio ?? obj.percentage ?? obj.mix ?? obj.description);
+                    return { key, value: mixValue };
+                }
+
+                if (typeof item === 'string') {
+                    const [keyPart, ...rest] = item.split(':');
+                    if (rest.length > 0) {
+                        return { key: keyPart.trim(), value: rest.join(':').trim() };
+                    }
+                    return { key: `Nhóm ${index + 1}`, value: item.trim() };
+                }
+
+                return { key: `Nhóm ${index + 1}`, value: toCleanString(item) };
+            })
+            .filter((item) => item.key || item.value);
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.entries(value as Record<string, unknown>)
+            .map(([key, mixValue]) => ({ key, value: toCleanString(mixValue) }))
+            .filter((item) => item.key || item.value);
+    }
+
+    return [];
+};
+
+const toWeeklyFramework = (value: unknown): Array<{ week: string; focus: string; sampleExecution: string }> => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item, index) => {
+                if (item && typeof item === 'object') {
+                    const obj = item as Record<string, unknown>;
+                    return {
+                        week: toCleanString(obj.week ?? obj.weekLabel ?? obj.name ?? `Tuần ${index + 1}`) || `Tuần ${index + 1}`,
+                        focus: toCleanString(obj.focus ?? obj.theme ?? obj.contentFocus),
+                        sampleExecution: toCleanString(obj.sampleExecution ?? obj.sample ?? obj.execution ?? obj.example),
+                    };
+                }
+
+                return {
+                    week: `Tuần ${index + 1}`,
+                    focus: toCleanString(item),
+                    sampleExecution: '',
+                };
+            })
+            .filter((item) => item.week || item.focus || item.sampleExecution);
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.entries(value as Record<string, unknown>)
+            .map(([week, item]) => {
+                if (item && typeof item === 'object') {
+                    const obj = item as Record<string, unknown>;
+                    return {
+                        week,
+                        focus: toCleanString(obj.focus ?? obj.theme ?? obj.contentFocus),
+                        sampleExecution: toCleanString(obj.sampleExecution ?? obj.sample ?? obj.execution ?? obj.example),
+                    };
+                }
+
+                return {
+                    week,
+                    focus: toCleanString(item),
+                    sampleExecution: '',
+                };
+            })
+            .filter((item) => item.week || item.focus || item.sampleExecution);
+    }
+
+    return [];
+};
+
+function normalizeStrategySuggestion(raw: unknown): MarketingStrategySuggestion {
+    const suggestion = (raw || {}) as Record<string, unknown>;
+
+    const campaignConcept = toCleanString(suggestion.campaignConcept ?? suggestion.concept);
+    const contentPillars = toStringArray(suggestion.contentPillars ?? suggestion.topics);
+    const recommendedChannels = toStringArray(suggestion.recommendedChannels ?? suggestion.channels);
+    const recommendedGoals = toStringArray(suggestion.recommendedGoals ?? suggestion.goals);
+    const topicMix = toTopicMix(suggestion.topicMix);
+    const weeklyFramework = toWeeklyFramework(suggestion.weeklyFramework);
+    const rationale = toCleanString(suggestion.rationale);
+    const summary = toCleanString(suggestion.summary);
+
+    return {
+        summary: summary || undefined,
+        concept: campaignConcept || undefined,
+        campaignConcept: campaignConcept || undefined,
+        contentPillars: contentPillars.length > 0 ? contentPillars : undefined,
+        topicMix: topicMix.length > 0 ? topicMix : undefined,
+        recommendedChannels: recommendedChannels.length > 0 ? recommendedChannels : undefined,
+        recommendedGoals: recommendedGoals.length > 0 ? recommendedGoals : undefined,
+        weeklyFramework: weeklyFramework.length > 0 ? weeklyFramework : undefined,
+        rationale: rationale || undefined,
+        topics: contentPillars.length > 0 ? contentPillars : undefined,
+        channels: recommendedChannels.length > 0 ? recommendedChannels : undefined,
+        goals: recommendedGoals.length > 0 ? recommendedGoals : undefined,
+    };
+}
+
 export default function MarketingPlanPage() {
     const [currentStep, setCurrentStep] = useState<Step>('form');
     const [formData, setFormData] = useState<MarketingPlanInput>(defaultPlanInput);
     const [planResult, setPlanResult] = useState<MarketingPlanResult | null>(null);
     const [selectedDay, setSelectedDay] = useState<{ date: Date; posts: PlanPost[] } | null>(null);
     const [useBrandSettings, setUseBrandSettings] = useState(false);
+    const [strategyLoading, setStrategyLoading] = useState(false);
+    const [strategySuggestion, setStrategySuggestion] = useState<MarketingStrategySuggestion | null>(null);
 
     const handleSubmit = useCallback(async () => {
         setCurrentStep('processing');
@@ -103,9 +242,91 @@ export default function MarketingPlanPage() {
         }
     }, [formData, useBrandSettings]);
 
+    const handleSuggestStrategy = useCallback(async () => {
+        if (!formData.campaignName || !formData.startDate || !formData.endDate) {
+            showError('Vui lòng nhập tên chiến dịch, ngày bắt đầu và ngày kết thúc trước khi xin đề xuất.');
+            return;
+        }
+
+        setStrategyLoading(true);
+        try {
+            const suggestion = await suggestMarketingStrategy({
+                ...formData,
+                useBrandSettings,
+            });
+
+            const normalizedSuggestion = normalizeStrategySuggestion(suggestion);
+
+            setStrategySuggestion(normalizedSuggestion);
+            setFormData((prev) => ({ ...prev, strategySuggestion: normalizedSuggestion }));
+            showSuccess('Đã nhận đề xuất chiến lược tháng từ AI!');
+        } catch (error: unknown) {
+            console.error('Error suggesting strategy:', error);
+
+            let errorMessage = 'Không thể lấy đề xuất chiến lược lúc này';
+            if (error && typeof error === 'object') {
+                const err = error as { message?: string };
+                if (err.message) errorMessage = err.message;
+            }
+
+            showError(errorMessage);
+        } finally {
+            setStrategyLoading(false);
+        }
+    }, [formData, useBrandSettings]);
+
+    const handleApplySuggestion = useCallback(() => {
+        const suggestion = formData.strategySuggestion || strategySuggestion;
+        if (!suggestion) return;
+
+        setFormData((prev) => {
+            const contentPillars = suggestion.contentPillars || suggestion.topics || [];
+            const recommendedChannels = suggestion.recommendedChannels || suggestion.channels || [];
+            const recommendedGoals = suggestion.recommendedGoals || suggestion.goals || [];
+            const campaignConcept = suggestion.campaignConcept || suggestion.concept || '';
+
+            const weeklyHighlights = (suggestion.weeklyFramework || [])
+                .map((item) => {
+                    const week = item.week?.trim();
+                    const focus = item.focus?.trim();
+                    const sampleExecution = item.sampleExecution?.trim();
+
+                    if (!week && !focus && !sampleExecution) return '';
+
+                    const title = week || 'Tuần';
+                    const detail = [focus, sampleExecution].filter(Boolean).join(' — ');
+                    return detail ? `- ${title}: ${detail}` : `- ${title}`;
+                })
+                .filter(Boolean);
+
+            const notesAppend = [
+                campaignConcept ? `Concept tháng: ${campaignConcept}` : '',
+                suggestion.rationale ? `Rationale: ${suggestion.rationale}` : '',
+                weeklyHighlights.length > 0 ? `Weekly highlights:\n${weeklyHighlights.join('\n')}` : '',
+            ].filter(Boolean);
+
+            const nextNotes = notesAppend.length > 0
+                ? [prev.notes.trim(), notesAppend.join('\n\n')].filter(Boolean).join('\n\n')
+                : prev.notes;
+
+            return {
+                ...prev,
+                topics: contentPillars.length > 0 ? contentPillars : prev.topics,
+                goals: recommendedGoals.length > 0 ? recommendedGoals : prev.goals,
+                channels: recommendedChannels.length > 0 ? recommendedChannels : prev.channels,
+                monthlyFocus: prev.monthlyFocus?.trim() ? prev.monthlyFocus : (campaignConcept || prev.monthlyFocus),
+                notes: nextNotes,
+                strategySuggestion: suggestion,
+            };
+        });
+
+        showSuccess('Đã áp dụng mix chiến lược vào form.');
+    }, [formData.strategySuggestion, strategySuggestion]);
+
     const handleReset = useCallback(() => {
         setFormData(defaultPlanInput);
         setPlanResult(null);
+        setStrategySuggestion(null);
         setCurrentStep('form');
     }, []);
 
@@ -178,6 +399,10 @@ export default function MarketingPlanPage() {
                     data={formData}
                     onChange={setFormData}
                     onSubmit={handleSubmit}
+                    onSuggestStrategy={handleSuggestStrategy}
+                    strategySuggestion={formData.strategySuggestion || strategySuggestion}
+                    strategyLoading={strategyLoading}
+                    onApplySuggestion={handleApplySuggestion}
                     useBrandSettings={useBrandSettings}
                     onBrandSettingsChange={setUseBrandSettings}
                 />

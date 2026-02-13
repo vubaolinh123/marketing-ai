@@ -92,7 +92,7 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/50 z-50"
+                        className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50"
                     />
 
                     {/* Modal */}
@@ -100,43 +100,43 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed inset-3 md:inset-6 lg:inset-8 bg-white rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col border border-gray-200"
+                        className="fixed inset-3 md:inset-6 lg:inset-8 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col border border-slate-700/80"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
                             <div>
-                                <h2 className="text-lg font-semibold text-gray-900">
+                                <h2 className="text-xl font-bold text-slate-100 tracking-wide">
                                     Chi tiết kế hoạch Marketing
                                 </h2>
                                 {plan && (
-                                    <p className="text-sm text-gray-500 mt-0.5">
+                                    <p className="text-sm text-slate-300 mt-1">
                                         Nhấn vào ngày để xem toàn bộ chủ đề trong ngày đó
                                     </p>
                                 )}
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200 bg-white"
+                                className="p-2.5 rounded-xl hover:bg-slate-700 transition-colors border border-slate-600 bg-slate-800"
                             >
-                                <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-5 h-5 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-auto p-6 bg-gray-50/30">
+                        <div className="flex-1 overflow-auto p-6 bg-gradient-to-b from-slate-900/70 to-slate-950/80">
                             {isLoading ? (
                                 <div className="flex items-center justify-center h-64">
                                     <div className="flex flex-col items-center gap-3">
                                         <div className="w-10 h-10 border-3 border-[#F59E0B] border-t-transparent rounded-full animate-spin" />
-                                        <p className="text-gray-500">Đang tải...</p>
+                                        <p className="text-slate-300">Đang tải...</p>
                                     </div>
                                 </div>
                             ) : error ? (
                                 <div className="flex items-center justify-center h-64">
                                     <div className="text-center">
-                                        <p className="text-red-500 mb-4">{error}</p>
+                                        <p className="text-red-300 mb-4">{error}</p>
                                         <button
                                             onClick={fetchPlanDetails}
                                             className="px-4 py-2 bg-[#F59E0B] text-white rounded-xl hover:bg-amber-600 transition-colors"
@@ -146,9 +146,9 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                                     </div>
                                 </div>
                             ) : plan ? (
-                                <div className="flex flex-col xl:flex-row gap-6">
+                                <div className="flex flex-col xl:flex-row gap-7 xl:gap-8">
                                     {/* Main content */}
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                         <PlanSummary plan={plan} />
                                         <PlanCalendarView
                                             plan={plan}

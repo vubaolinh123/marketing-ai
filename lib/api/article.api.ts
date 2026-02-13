@@ -21,6 +21,11 @@ export interface GenerateArticleRequest {
     imageUrl?: string;
     imageUrls?: string[];
     useBrandSettings?: boolean;
+    writingStyle?: 'sales' | 'lifestyle' | 'technical' | 'balanced';
+    storytellingDepth?: 'low' | 'medium' | 'high';
+    baseTitle?: string;
+    baseContent?: string;
+    regenerateInstruction?: string;
 }
 
 export interface GeneratedArticle {
