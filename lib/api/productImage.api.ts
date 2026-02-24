@@ -48,6 +48,12 @@ export interface ProductImage {
     usedBrandSettings: boolean;
     status: 'processing' | 'completed' | 'failed';
     errorMessage?: string;
+    isProcessingStale?: boolean;
+    isLikelyRunning?: boolean;
+    processingStartedAt?: string | null;
+    processingHeartbeatAt?: string | null;
+    processingLastHeartbeatAt?: string | null;
+    processingCompletedAt?: string | null;
     createdAt: string;
     updatedAt: string;
 }

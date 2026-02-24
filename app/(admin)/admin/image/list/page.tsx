@@ -132,6 +132,12 @@ export default function ImageListPage() {
         }
     }, [deleteModal.image, fetchImages]);
 
+    const deleteModalTitle = deleteModal.image
+        ? (deleteModal.image.isLikelyRunning
+            ? `${deleteModal.image.title} (đang xử lý)`
+            : deleteModal.image.title)
+        : '';
+
     return (
         <div className="w-[96%] max-w-[1700px] mx-auto">
             {/* Page Header */}
@@ -209,7 +215,7 @@ export default function ImageListPage() {
             {/* Delete Confirm Modal */}
             <DeleteConfirmModal
                 isOpen={deleteModal.isOpen}
-                title={deleteModal.image?.title || ''}
+                title={deleteModalTitle}
                 onConfirm={confirmDelete}
                 onClose={() => setDeleteModal({ isOpen: false, image: null })}
             />
