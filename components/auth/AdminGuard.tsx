@@ -10,18 +10,15 @@ interface AdminGuardProps {
 
 export default function AdminGuard({ children }: AdminGuardProps) {
     const router = useRouter();
-    const { user, isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
 
     useEffect(() => {
         if (!isLoading) {
             if (!isAuthenticated) {
                 router.replace('/login');
-            } else if (user?.role !== 'admin') {
-                // User is logged in but not admin
-                router.replace('/login');
             }
         }
-    }, [isLoading, isAuthenticated, user, router]);
+    }, [isLoading, isAuthenticated, router]);
 
     // Show loading while checking auth
     if (isLoading) {
@@ -35,8 +32,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
         );
     }
 
-    // Not authenticated or not admin, show nothing (redirect will happen)
-    if (!isAuthenticated || user?.role !== 'admin') {
+    // Not authenticated, show nothing (redirect will happen)
+    if (!isAuthenticated) {
         return null;
     }
 

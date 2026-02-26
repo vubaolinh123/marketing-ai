@@ -28,10 +28,17 @@ export default function LoginForm() {
         const result = await login({
             email: formData.email,
             password: formData.password,
+            rememberMe,
         });
 
         if (result.success) {
-            router.push('/admin');
+            const role = result.user?.role;
+
+            if (role === 'admin') {
+                router.push('/admin');
+            } else {
+                router.push('/admin/article');
+            }
         } else {
             setError(result.error || 'Đã xảy ra lỗi');
         }

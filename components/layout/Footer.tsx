@@ -3,10 +3,10 @@
 import Link from 'next/link';
 
 const toolLinks = [
-    { label: 'Tạo bài viết AI', href: '/create-article' },
-    { label: 'Tạo ảnh AI', href: '/create-image' },
-    { label: 'Kế hoạch Marketing', href: '/marketing-plan' },
-    { label: 'Kịch bản Video', href: '/video-script' },
+    { label: 'Tạo bài viết AI', href: '/admin/article' },
+    { label: 'Tạo ảnh AI', href: '/admin/image' },
+    { label: 'Kế hoạch Marketing', href: '/admin/marketing' },
+    { label: 'Kịch bản Video', href: '/admin/video' },
 ];
 
 const quickLinks = [

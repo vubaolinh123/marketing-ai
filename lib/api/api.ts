@@ -2,6 +2,31 @@ import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'ax
 
 // Token storage key
 const TOKEN_KEY = 'auth_token';
+const ACT_AS_USER_KEY = 'act_as_user_id';
+
+const ACT_AS_ALLOWED_PREFIXES = [
+    '/ai-settings',
+    '/articles',
+    '/upload',
+    '/ai',
+    '/video-scripts',
+    '/product-images',
+    '/marketing-plan'
+];
+
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api`;
+
+const refreshClient = axios.create({
+    baseURL: API_BASE_URL,
+    timeout: 60000,
+    withCredentials: true,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
 // API Error interface
 export interface ApiError {
@@ -35,11 +60,52 @@ export const removeToken = (): void => {
     localStorage.removeItem(TOKEN_KEY);
 };
 
+export const getActAsUserId = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    const value = localStorage.getItem(ACT_AS_USER_KEY);
+    return value && value.trim() ? value.trim() : null;
+};
+
+export const setActAsUserId = (userId: string): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(ACT_AS_USER_KEY, userId);
+};
+
+export const clearActAsUserId = (): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(ACT_AS_USER_KEY);
+};
+
+const shouldSkipAuthRefresh = (url?: string): boolean => {
+    if (!url) return false;
+    return url.includes('/auth/login') ||
+        url.includes('/auth/register') ||
+        url.includes('/auth/refresh') ||
+        url.includes('/auth/logout');
+};
+
+const shouldAttachActAsHeader = (url?: string): boolean => {
+    if (!url) return false;
+
+    const normalizedUrl = url.startsWith('/api') ? url.slice(4) : url;
+    return ACT_AS_ALLOWED_PREFIXES.some((prefix) => normalizedUrl.startsWith(prefix));
+};
+
+const requestNewAccessToken = async (): Promise<string | null> => {
+    try {
+        const response = await refreshClient.post<ApiResponse<{ token?: string }>>('/auth/refresh');
+        return response.data?.data?.token || null;
+    } catch {
+        return null;
+    }
+};
+
 // Create axios instance
 const api: AxiosInstance = axios.create({
-    baseURL: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api`,
+    baseURL: API_BASE_URL,
     // Keep a safe default for normal APIs; heavy AI endpoints should override per-request timeout.
     timeout: 60000,
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -51,6 +117,11 @@ api.interceptors.request.use(
         const token = getToken();
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        const actAsUserId = getActAsUserId();
+        if (actAsUserId && config.headers && shouldAttachActAsHeader(config.url)) {
+            config.headers['X-Act-As-User'] = actAsUserId;
         }
 
         // Log request in development
@@ -76,6 +147,7 @@ api.interceptors.response.use(
         return response;
     },
     (error: AxiosError<ApiError>) => {
+        const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
         const status = error.response?.status;
         let message = error.response?.data?.message || 'Đã xảy ra lỗi';
 
@@ -101,11 +173,51 @@ api.interceptors.response.use(
             });
         }
 
+        // Try refresh flow once when access token expired
+        if (
+            status === 401 &&
+            originalRequest &&
+            !originalRequest._retry &&
+            !shouldSkipAuthRefresh(originalRequest.url) &&
+            !!getToken()
+        ) {
+            originalRequest._retry = true;
+
+            if (!isRefreshing) {
+                isRefreshing = true;
+                refreshPromise = requestNewAccessToken()
+                    .finally(() => {
+                        isRefreshing = false;
+                    });
+            }
+
+            return (refreshPromise || Promise.resolve(null)).then((newToken) => {
+                if (newToken && originalRequest.headers) {
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    return api(originalRequest);
+                }
+
+                removeToken();
+                clearActAsUserId();
+
+                if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+                    window.location.href = '/login';
+                }
+
+                return Promise.reject({
+                    success: false,
+                    message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+                    statusCode: 401,
+                } as ApiError);
+            });
+        }
+
         // Handle specific error codes
         switch (status) {
             case 401:
                 // Unauthorized - Clear token and redirect to login
                 removeToken();
+                clearActAsUserId();
                 if (typeof window !== 'undefined') {
                     // Don't redirect if already on login page
                     if (!window.location.pathname.includes('/login')) {

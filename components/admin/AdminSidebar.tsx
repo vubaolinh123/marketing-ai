@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
 
 interface AdminSidebarProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ interface MenuItem {
     icon: React.ReactNode;
     href?: string;
     children?: { label: string; href: string }[];
+    requiresAdmin?: boolean;
 }
 
 const menuItems: MenuItem[] = [
@@ -78,17 +80,25 @@ const menuItems: MenuItem[] = [
             </svg>
         ),
     },
+    {
+        label: 'Quản lý user',
+        href: '/admin/users',
+        requiresAdmin: true,
+        icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5V4H2v16h5m10 0v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6m10 0H7" />
+            </svg>
+        ),
+    },
 ];
 
 export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSidebarProps) {
+    const { user } = useAuth();
     const pathname = usePathname();
     const [expandedItems, setExpandedItems] = useState<string[]>(['Bài viết']);
-    const [mounted, setMounted] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
-
         const mediaQuery = window.matchMedia('(max-width: 767px)');
         const updateIsMobile = () => setIsMobile(mediaQuery.matches);
 
@@ -120,11 +130,11 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
         return pathname === href || pathname?.startsWith(href + '/');
     };
 
-    const sidebarX = !mounted
-        ? 0
-        : isMobile && !isOpen
+    const sidebarX = isMobile && !isOpen
             ? -280
             : 0;
+
+    const visibleMenuItems = menuItems.filter((item) => !item.requiresAdmin || user?.role === 'admin');
 
     return (
         <>
@@ -176,7 +186,7 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
 
                 {/* Menu Items */}
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                    {menuItems.map((item, index) => {
+                    {visibleMenuItems.map((item, index) => {
                         const isActive = isItemActive(item);
                         const isExpanded = expandedItems.includes(item.label);
                         const hasChildren = item.children && item.children.length > 0;

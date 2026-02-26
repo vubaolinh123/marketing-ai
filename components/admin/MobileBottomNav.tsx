@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
 
 interface MenuItem {
     label: string;
     icon: React.ReactNode;
     href?: string;
     children?: { label: string; href: string }[];
+    requiresAdmin?: boolean;
 }
 
 const menuItems: MenuItem[] = [
@@ -72,11 +74,24 @@ const menuItems: MenuItem[] = [
             </svg>
         ),
     },
+    {
+        label: 'Users',
+        href: '/admin/users',
+        requiresAdmin: true,
+        icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5V4H2v16h5m10 0v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6m10 0H7" />
+            </svg>
+        ),
+    },
 ];
 
 export default function MobileBottomNav() {
+    const { user } = useAuth();
     const pathname = usePathname();
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+
+    const visibleMenuItems = menuItems.filter((item) => !item.requiresAdmin || user?.role === 'admin');
 
     const isItemActive = (item: MenuItem) => {
         if (item.href) {
@@ -120,7 +135,7 @@ export default function MobileBottomNav() {
                                 <div className="px-3 py-2 text-sm font-semibold text-gray-500 border-b border-gray-100 mb-1">
                                     {activeSubmenu}
                                 </div>
-                                {menuItems
+                                {visibleMenuItems
                                     .find(item => item.label === activeSubmenu)
                                     ?.children?.map(child => (
                                         <Link
@@ -152,7 +167,7 @@ export default function MobileBottomNav() {
             {/* Bottom Navigation Bar */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-lg safe-area-bottom">
                 <div className="flex items-center justify-around h-16 px-2">
-                    {menuItems.map((item) => {
+                    {visibleMenuItems.map((item) => {
                         const isActive = isItemActive(item);
                         const hasChildren = item.children && item.children.length > 0;
 

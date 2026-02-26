@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { motion } from 'framer-motion';
+import SwitchUserControl from './SwitchUserControl';
 
 interface AdminHeaderProps {
     onMenuClick: () => void;
@@ -64,6 +65,8 @@ export default function AdminHeader({ onMenuClick, isCollapsed, onToggleCollapse
 
             {/* Right: User Info */}
             <div className="flex items-center gap-4">
+                <SwitchUserControl />
+
                 <div className="hidden sm:flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#FFD700] flex items-center justify-center text-gray-900 font-bold text-sm shadow-lg">
                         {user?.name?.charAt(0).toUpperCase()}

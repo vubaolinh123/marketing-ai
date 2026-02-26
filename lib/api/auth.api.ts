@@ -9,8 +9,15 @@ export interface AuthUser {
     role: 'user' | 'admin';
 }
 
+export interface AuthMeResponse extends AuthUser {
+    effectiveUser?: AuthUser | null;
+    isImpersonating?: boolean;
+}
+
 export interface LoginResponse {
     token: string;
+    expiresIn?: number;
+    rememberMe?: boolean;
     user: AuthUser;
 }
 
@@ -23,6 +30,7 @@ export interface RegisterData {
 export interface LoginData {
     email: string;
     password: string;
+    rememberMe?: boolean;
 }
 
 // Auth API service
@@ -50,6 +58,17 @@ export const authApi = {
     },
 
     /**
+     * Refresh access token via httpOnly refresh cookie
+     */
+    async refresh(): Promise<ApiResponse<LoginResponse>> {
+        const response = await api.post<ApiResponse<LoginResponse>>('/auth/refresh');
+        if (response.data.success && response.data.data.token) {
+            setToken(response.data.data.token);
+        }
+        return response.data;
+    },
+
+    /**
      * Logout user
      */
     async logout(): Promise<void> {
@@ -61,10 +80,21 @@ export const authApi = {
     },
 
     /**
+     * Logout all active sessions
+     */
+    async logoutAll(): Promise<void> {
+        try {
+            await api.post('/auth/logout-all');
+        } finally {
+            removeToken();
+        }
+    },
+
+    /**
      * Get current user info
      */
-    async getMe(): Promise<ApiResponse<AuthUser>> {
-        const response = await api.get<ApiResponse<AuthUser>>('/auth/me');
+    async getMe(): Promise<ApiResponse<AuthMeResponse>> {
+        const response = await api.get<ApiResponse<AuthMeResponse>>('/auth/me');
         return response.data;
     },
 };

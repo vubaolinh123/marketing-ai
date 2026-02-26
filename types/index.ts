@@ -11,6 +11,8 @@ export interface User {
 
 export interface AuthState {
     user: User | null;
+    effectiveUser: User | null;
+    isImpersonating: boolean;
     token: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -19,6 +21,7 @@ export interface AuthState {
 export interface LoginCredentials {
     email: string;
     password: string;
+    rememberMe?: boolean;
 }
 
 export interface Feature {

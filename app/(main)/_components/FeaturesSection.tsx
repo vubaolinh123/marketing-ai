@@ -13,7 +13,7 @@ const features = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
         ),
-        href: '/create-article',
+        href: '/admin/article',
         color: 'from-[#FFD700] to-[#F5C800]',
         shadowColor: 'shadow-[#FFD700]/20',
         features: ['Chọn chủ đề & mục đích', 'Tạo ảnh AI kèm theo', 'Đăng lên Facebook tự động'],
@@ -28,7 +28,7 @@ const features = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
         ),
-        href: '/create-image',
+        href: '/admin/image',
         color: 'from-[#4A90D9] to-[#3B82F6]',
         shadowColor: 'shadow-[#3B82F6]/20',
         features: ['Upload ảnh sản phẩm gốc', 'AI ghép logo tự động', 'Tạo background bắt mắt'],
@@ -43,7 +43,7 @@ const features = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
         ),
-        href: '/marketing-plan',
+        href: '/admin/marketing',
         color: 'from-[#FFD700] to-[#E5C000]',
         shadowColor: 'shadow-[#FFD700]/20',
         features: ['Chủ đề & ngày đăng', 'Calendar trực quan', 'Nhắc nhở tự động'],
@@ -58,7 +58,7 @@ const features = [
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
         ),
-        href: '/video-script',
+        href: '/admin/video',
         color: 'from-[#3B82F6] to-[#1D4ED8]',
         shadowColor: 'shadow-[#3B82F6]/20',
         features: ['Chọn tone & thời lượng', 'Có/không có người xuất hiện', 'Export kịch bản chi tiết'],
