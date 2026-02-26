@@ -46,12 +46,17 @@ export default function Header() {
                     )}
                 >
                     {/* Logo Section */}
-                    <Link href="/" className="flex items-center gap-1 shrink-0">
-                        <div className="flex items-center">
-                            <span className="text-xl font-bold text-gray-800">EASY</span>
-                            <div className="bg-[#FFD700] px-2 py-0.5 ml-1 rounded">
-                                <span className="text-sm font-bold text-gray-900">MARKETING</span>
-                            </div>
+                    <Link href="/" className="flex items-center shrink-0" aria-label="EASY Marketing Home">
+                        <div className="rounded-lg bg-white/70 px-1.5 py-1 ring-1 ring-gray-100">
+                            <Image
+                                src="/logo/logo.png"
+                                alt="EASY Marketing"
+                                width={2048}
+                                height={386}
+                                priority
+                                className="h-6 w-auto sm:h-7 lg:h-8 select-none drop-shadow-[0_1px_1px_rgba(17,32,61,0.08)]"
+                                sizes="(max-width: 640px) 128px, (max-width: 1024px) 148px, 170px"
+                            />
                         </div>
                     </Link>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { motion } from 'framer-motion';
 import SwitchUserControl from './SwitchUserControl';
@@ -50,15 +51,20 @@ export default function AdminHeader({ onMenuClick, isCollapsed, onToggleCollapse
                 </button>
 
                 {/* Logo */}
-                <Link href="/admin" className="flex items-center">
+                <Link href="/admin" className="flex items-center" aria-label="EASY Marketing Admin">
                     <motion.div
                         whileHover={{ scale: 1.02 }}
-                        className="flex items-center gap-2"
+                        className="rounded-lg bg-white/75 px-1.5 py-1 ring-1 ring-[#E5EEFF]"
                     >
-                        <span className="text-[22px] font-extrabold tracking-wide text-[#11203D]">EASY</span>
-                        <div className="bg-[#FFD84D] px-2.5 py-1 rounded-full shadow-[0_8px_20px_rgba(255,210,70,0.4)]">
-                            <span className="text-xs font-bold text-gray-900">MARKETING</span>
-                        </div>
+                        <Image
+                            src="/logo/logo.png"
+                            alt="EASY Marketing"
+                            width={2048}
+                            height={386}
+                            priority
+                            className="h-6 w-auto sm:h-7 lg:h-8 select-none drop-shadow-[0_1px_1px_rgba(17,32,61,0.08)]"
+                            sizes="(max-width: 640px) 128px, (max-width: 1024px) 148px, 170px"
+                        />
                     </motion.div>
                 </Link>
             </div>
