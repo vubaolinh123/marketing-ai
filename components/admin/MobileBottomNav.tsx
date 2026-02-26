@@ -120,7 +120,7 @@ export default function MobileBottomNav() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/30 z-40"
+                            className="fixed inset-0 bg-[#03164A]/38 z-40"
                             onClick={() => setActiveSubmenu(null)}
                         />
 
@@ -129,7 +129,7 @@ export default function MobileBottomNav() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 20 }}
-                            className="fixed bottom-20 left-4 right-4 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+                            className="fixed bottom-24 left-3 right-3 z-50 bg-white rounded-[22px] shadow-[0_24px_60px_rgba(9,37,121,0.3)] border border-[#DCE7FF] overflow-hidden"
                         >
                             <div className="p-2">
                                 <div className="px-3 py-2 text-sm font-semibold text-gray-500 border-b border-gray-100 mb-1">
@@ -145,8 +145,8 @@ export default function MobileBottomNav() {
                                             className={cn(
                                                 'flex items-center gap-3 px-4 py-3 rounded-xl transition-all',
                                                 pathname === child.href
-                                                    ? 'bg-gradient-to-r from-[#FFD700] to-[#F5C800] text-gray-900'
-                                                    : 'text-gray-700 hover:bg-gray-100'
+                                                    ? 'bg-[#FFE18A] text-[#1F2B45]'
+                                                    : 'text-[#334155] hover:bg-[#EEF4FF]'
                                             )}
                                         >
                                             <span className={cn(
@@ -165,7 +165,7 @@ export default function MobileBottomNav() {
             </AnimatePresence>
 
             {/* Bottom Navigation Bar */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-lg safe-area-bottom">
+            <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 rounded-[22px] bg-white/95 backdrop-blur-xl border border-white/80 shadow-[0_18px_45px_rgba(8,36,123,0.3)] safe-area-bottom">
                 <div className="flex items-center justify-around h-16 px-2">
                     {visibleMenuItems.map((item) => {
                         const isActive = isItemActive(item);
@@ -179,13 +179,13 @@ export default function MobileBottomNav() {
                                     className={cn(
                                         'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[60px]',
                                         isActive || activeSubmenu === item.label
-                                            ? 'text-[#3B82F6]'
+                                            ? 'text-[#1E2A45]'
                                             : 'text-gray-500'
                                     )}
                                 >
                                     <div className={cn(
                                         'p-1.5 rounded-lg transition-all',
-                                        isActive && 'bg-[#3B82F6]/10'
+                                        isActive && 'bg-[#FFE18A] shadow-[0_6px_16px_rgba(255,212,72,0.35)]'
                                     )}>
                                         {item.icon}
                                     </div>
@@ -201,13 +201,13 @@ export default function MobileBottomNav() {
                                 className={cn(
                                     'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[60px]',
                                     isActive
-                                        ? 'text-[#F59E0B]'
+                                        ? 'text-[#1E2A45]'
                                         : 'text-gray-500'
                                 )}
                             >
                                 <div className={cn(
                                     'p-1.5 rounded-lg transition-all',
-                                    isActive && 'bg-[#F59E0B]/10'
+                                    isActive && 'bg-[#FFE18A] shadow-[0_6px_16px_rgba(255,212,72,0.35)]'
                                 )}>
                                     {item.icon}
                                 </div>

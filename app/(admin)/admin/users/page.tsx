@@ -14,14 +14,24 @@ interface CreateUserFormState {
     name: string;
     email: string;
     password: string;
+    confirmPassword: string;
     role: 'user' | 'admin';
     isActive: boolean;
+}
+
+interface EditUserFormState {
+    id: string;
+    name: string;
+    isActive: boolean;
+    newPassword: string;
+    confirmNewPassword: string;
 }
 
 const DEFAULT_CREATE_FORM: CreateUserFormState = {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     role: 'user',
     isActive: true
 };
@@ -63,6 +73,9 @@ export default function AdminUsersPage() {
     const [isCreating, setIsCreating] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createForm, setCreateForm] = useState<CreateUserFormState>(DEFAULT_CREATE_FORM);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState<EditUserFormState | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState<'' | 'user' | 'admin'>('');
@@ -143,8 +156,13 @@ export default function AdminUsersPage() {
     };
 
     const handleCreateUser = async () => {
-        if (!createForm.name || !createForm.email || !createForm.password) {
-            showError('Vui lòng nhập đầy đủ tên, email, mật khẩu');
+        if (!createForm.name || !createForm.email || !createForm.password || !createForm.confirmPassword) {
+            showError('Vui lòng nhập đầy đủ tên, email, mật khẩu và nhập lại mật khẩu');
+            return;
+        }
+
+        if (createForm.password !== createForm.confirmPassword) {
+            showError('Mật khẩu xác nhận không khớp');
             return;
         }
 
@@ -172,6 +190,73 @@ export default function AdminUsersPage() {
             showError(message);
         } finally {
             setIsCreating(false);
+        }
+    };
+
+    const handleOpenEditModal = (target: AdminUser) => {
+        setEditForm({
+            id: target.id,
+            name: target.name,
+            isActive: !!target.isActive,
+            newPassword: '',
+            confirmNewPassword: ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveEditUser = async () => {
+        if (!editForm) return;
+
+        if (!editForm.name.trim()) {
+            showError('Họ tên không được để trống');
+            return;
+        }
+
+        if (editForm.newPassword || editForm.confirmNewPassword) {
+            if (!editForm.newPassword || !editForm.confirmNewPassword) {
+                showError('Vui lòng nhập đủ mật khẩu mới và xác nhận mật khẩu mới');
+                return;
+            }
+
+            if (editForm.newPassword.length < 6) {
+                showError('Mật khẩu mới phải có ít nhất 6 ký tự');
+                return;
+            }
+
+            if (editForm.newPassword !== editForm.confirmNewPassword) {
+                showError('Xác nhận mật khẩu mới không khớp');
+                return;
+            }
+        }
+
+        try {
+            setIsUpdating(true);
+
+            const updateResponse = await adminUserApi.updateUser(editForm.id, {
+                name: editForm.name.trim(),
+                isActive: editForm.isActive
+            });
+
+            if (!updateResponse.success) {
+                throw new Error(updateResponse.message || 'Không thể cập nhật thông tin người dùng');
+            }
+
+            if (editForm.newPassword) {
+                const resetResponse = await adminUserApi.resetUserPassword(editForm.id, editForm.newPassword);
+                if (!resetResponse.success) {
+                    throw new Error(resetResponse.message || 'Không thể đặt lại mật khẩu');
+                }
+            }
+
+            showSuccess('Cập nhật người dùng thành công');
+            setShowEditModal(false);
+            setEditForm(null);
+            fetchUsers();
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Không thể cập nhật người dùng';
+            showError(message);
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -379,6 +464,12 @@ export default function AdminUsersPage() {
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-2">
                                             <button
+                                                onClick={() => handleOpenEditModal(item)}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF4FF] text-[#1646C7] hover:bg-[#E2ECFF] transition-colors"
+                                            >
+                                                Sửa
+                                            </button>
+                                            <button
                                                 onClick={() => handleSwitchAs(item)}
                                                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#FFD700]/30 text-gray-900 hover:bg-[#FFD700]/50 transition-colors"
                                             >
@@ -446,6 +537,14 @@ export default function AdminUsersPage() {
                                     placeholder="Tối thiểu 6 ký tự"
                                 />
 
+                                <Input
+                                    label="Nhập lại mật khẩu"
+                                    type="password"
+                                    value={createForm.confirmPassword}
+                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                    placeholder="Nhập lại mật khẩu"
+                                />
+
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
@@ -476,7 +575,10 @@ export default function AdminUsersPage() {
                             <div className="mt-6 flex items-center justify-end gap-3">
                                 <Button
                                     variant="secondary"
-                                    onClick={() => setShowCreateModal(false)}
+                                    onClick={() => {
+                                        setShowCreateModal(false);
+                                        setCreateForm(DEFAULT_CREATE_FORM);
+                                    }}
                                     disabled={isCreating}
                                 >
                                     Hủy
@@ -488,6 +590,89 @@ export default function AdminUsersPage() {
                                     isLoading={isCreating}
                                 >
                                     Tạo tài khoản
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showEditModal && editForm && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                        onClick={() => !isUpdating && setShowEditModal(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                            className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-200 p-6"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="mb-4">
+                                <h3 className="text-xl font-bold text-gray-900">Cập nhật người dùng</h3>
+                                <p className="text-sm text-gray-500 mt-1">Admin có thể chỉnh sửa họ tên, trạng thái và đặt lại mật khẩu.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <Input
+                                    label="Họ tên"
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm((prev) => (prev ? { ...prev, name: e.target.value } : prev))}
+                                    placeholder="Nhập họ tên"
+                                />
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
+                                    <select
+                                        value={editForm.isActive ? 'active' : 'inactive'}
+                                        onChange={(e) => setEditForm((prev) => (prev ? { ...prev, isActive: e.target.value === 'active' } : prev))}
+                                        className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90D9]/30"
+                                    >
+                                        <option value="active">Hoạt động</option>
+                                        <option value="inactive">Tạm khóa</option>
+                                    </select>
+                                </div>
+
+                                <Input
+                                    label="Mật khẩu mới (tuỳ chọn)"
+                                    type="password"
+                                    value={editForm.newPassword}
+                                    onChange={(e) => setEditForm((prev) => (prev ? { ...prev, newPassword: e.target.value } : prev))}
+                                    placeholder="Để trống nếu không đổi"
+                                />
+
+                                <Input
+                                    label="Nhập lại mật khẩu mới"
+                                    type="password"
+                                    value={editForm.confirmNewPassword}
+                                    onChange={(e) => setEditForm((prev) => (prev ? { ...prev, confirmNewPassword: e.target.value } : prev))}
+                                    placeholder="Nhập lại mật khẩu mới"
+                                />
+                            </div>
+
+                            <div className="mt-6 flex items-center justify-end gap-3">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setEditForm(null);
+                                    }}
+                                    disabled={isUpdating}
+                                >
+                                    Hủy
+                                </Button>
+
+                                <Button
+                                    variant="primary"
+                                    onClick={handleSaveEditUser}
+                                    isLoading={isUpdating}
+                                >
+                                    Lưu thay đổi
                                 </Button>
                             </div>
                         </motion.div>
