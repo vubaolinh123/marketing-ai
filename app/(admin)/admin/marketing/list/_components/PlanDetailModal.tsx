@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { getMarketingPlanById, MarketingPlan, MarketingPost } from '@/lib/api/marketingPlan.api';
 import { MarketingPlanResult, PlanPost } from '@/lib/fakeData/marketing';
 import PlanSummary from './PlanSummary';
@@ -80,9 +81,9 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
         setSelectedDay(null);
     }, []);
 
-    if (!isOpen) return null;
+    if (typeof window === 'undefined' || !isOpen) return null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <>
@@ -92,7 +93,7 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50"
+                        className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[1300]"
                     />
 
                     {/* Modal */}
@@ -100,7 +101,7 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed inset-3 md:inset-6 lg:inset-8 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col border border-slate-700/80"
+                        className="fixed top-28 sm:top-32 bottom-4 md:bottom-6 lg:bottom-8 inset-x-3 md:inset-x-6 lg:inset-x-8 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 rounded-3xl shadow-2xl z-[1310] overflow-hidden flex flex-col border border-slate-700/80"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
@@ -173,6 +174,7 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                     </motion.div>
                 </>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

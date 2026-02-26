@@ -77,16 +77,6 @@ export default function LoginPage() {
             {/* Login Card */}
             <div className="relative z-10 w-full max-w-md animate-fade-in">
                 <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 md:p-10">
-                    {/* Logo */}
-                    <div className="flex justify-center mb-8">
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-gray-800">EASY</span>
-                            <div className="bg-[#FFD700] px-3 py-1 rounded shadow-md">
-                                <span className="text-sm font-bold text-gray-900">MARKETING</span>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Header */}
                     <div className="text-center mb-8">
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">

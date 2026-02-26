@@ -34,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="vi" className="dark">
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
@@ -44,4 +45,3 @@ export default function RootLayout({
     </html>
   );
 }
-

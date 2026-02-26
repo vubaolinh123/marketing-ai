@@ -22,7 +22,7 @@ export default function DayDetailModal({ date, posts, onClose }: DayDetailModalP
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                className="fixed top-24 sm:top-28 bottom-4 inset-x-0 bg-black/60 backdrop-blur-sm z-[70] flex items-start justify-center p-4"
                 onClick={onClose}
             >
                 <motion.div
@@ -30,7 +30,7 @@ export default function DayDetailModal({ date, posts, onClose }: DayDetailModalP
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden"
+                    className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden z-[80]"
                 >
                     {/* Header */}
                     <div className="bg-gradient-to-r from-[#F59E0B] to-[#EA580C] p-4 text-white">

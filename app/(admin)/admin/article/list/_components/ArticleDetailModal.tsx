@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { generateArticle, getImageUrl, updateArticle, type Article, type GeneratedArticle } from '@/lib/api';
@@ -294,14 +295,16 @@ export default function ArticleDetailModal({
         }
     };
 
-    return (
+    if (typeof window === 'undefined') return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && article && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/65 backdrop-blur-sm z-50"
+                    className="fixed inset-0 z-[1300] bg-black/65 backdrop-blur-sm flex items-start justify-center px-2 sm:px-4 pt-28 sm:pt-32 pb-6 sm:pb-8 overflow-y-auto"
                     onClick={onClose}
                 >
                     <motion.div
@@ -309,7 +312,7 @@ export default function ArticleDetailModal({
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-screen h-screen md:w-[95vw] md:h-[93vh] lg:max-w-7xl xl:max-w-[1450px] md:mx-auto md:my-5 bg-white rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-200"
+                        className="w-full md:w-[95vw] lg:max-w-7xl xl:max-w-[1450px] mx-auto h-[calc(100dvh-6.5rem)] sm:h-[calc(100dvh-8.5rem)] md:h-[calc(100dvh-9rem)] bg-white rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-200"
                     >
                         {/* Header */}
                         <div className="bg-gradient-to-r from-[#1F2937] to-[#111827] px-4 md:px-6 py-4 text-white flex-shrink-0 border-b border-white/10">
@@ -804,6 +807,7 @@ export default function ArticleDetailModal({
                     </motion.div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

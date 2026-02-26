@@ -74,14 +74,14 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 z-[120] flex items-start justify-center px-4 sm:px-6 pt-24 sm:pt-28 pb-6 sm:pb-8 overflow-y-auto bg-black/70 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] max-h-[92vh] overflow-hidden border border-gray-200"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] max-h-[calc(100dvh-7.5rem)] sm:max-h-[calc(100dvh-9rem)] overflow-hidden border border-gray-200"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}

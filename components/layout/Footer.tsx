@@ -43,12 +43,6 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                     {/* Brand Column */}
                     <div className="md:col-span-1">
-                        <Link href="/" className="inline-flex items-center gap-2 mb-6">
-                            <span className="text-2xl font-bold text-gray-800">EASY</span>
-                            <div className="bg-[#FFD700] px-2 py-1 rounded shadow-md">
-                                <span className="text-sm font-bold text-gray-900">MARKETING</span>
-                            </div>
-                        </Link>
                         <p className="text-gray-700 text-sm leading-relaxed mb-6">
                             Công cụ nội bộ tạo nội dung AI cho team Easy Marketing. Tự động hóa quy trình marketing với sức mạnh của trí tuệ nhân tạo.
                         </p>

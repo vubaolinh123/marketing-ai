@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { VideoScript, videoScriptApi } from '@/lib/api';
 
 
@@ -73,22 +74,22 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
         }
     }, [script]);
 
-    if (!isOpen || !script) return null;
+    if (typeof window === 'undefined' || !isOpen || !script) return null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-[1300] flex items-start justify-center px-3 md:px-4 pt-28 sm:pt-32 pb-6 sm:pb-8 overflow-y-auto bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] max-h-[90vh] overflow-hidden flex flex-col"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] max-h-[calc(100dvh-7.5rem)] sm:max-h-[calc(100dvh-9rem)] overflow-hidden flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -205,6 +206,7 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
                     </div>
                 </motion.div>
             </motion.div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

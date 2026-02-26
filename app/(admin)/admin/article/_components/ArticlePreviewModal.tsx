@@ -58,7 +58,7 @@ export default function ArticlePreviewModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 overflow-hidden"
+                    className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-start justify-center px-2 sm:px-4 pt-24 sm:pt-28 pb-6 sm:pb-8 overflow-y-auto"
                     onClick={onClose}
                 >
                     <motion.div
@@ -66,7 +66,7 @@ export default function ArticlePreviewModal({
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white w-full max-w-6xl h-[92dvh] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+                        className="bg-white w-full max-w-6xl mx-auto h-[calc(100dvh-6.5rem)] sm:h-[calc(100dvh-8.5rem)] max-h-[calc(100dvh-6.5rem)] sm:max-h-[calc(100dvh-8.5rem)] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                     >
                         {/* Header */}
                         <div className="bg-gradient-to-r from-[#1F2937] to-[#111827] p-4 sm:p-6 text-white shrink-0">

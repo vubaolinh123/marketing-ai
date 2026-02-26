@@ -26,7 +26,7 @@ export default function AdminLayout({
                 />
 
                 {/* Body - sidebar + content */}
-                <div className="relative z-10 flex flex-1 overflow-hidden mt-4 md:mt-6 px-3 md:px-4 lg:px-6 pb-3 md:pb-4 lg:pb-6 gap-3 md:gap-4">
+                <div className="relative flex flex-1 overflow-hidden mt-4 md:mt-6 px-3 md:px-4 lg:px-6 pb-3 md:pb-4 lg:pb-6 gap-3 md:gap-4">
                     {/* Sidebar - sticky full height on desktop, drawer on mobile */}
                     <AdminSidebar
                         isOpen={sidebarOpen}

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui';
 
 interface DeleteConfirmModalProps {
@@ -16,14 +17,16 @@ export default function DeleteConfirmModal({
     onConfirm,
     title,
 }: DeleteConfirmModalProps) {
-    return (
+    if (typeof window === 'undefined') return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-start justify-center px-4 pt-28 sm:pt-32 pb-6 sm:pb-8 overflow-y-auto"
                     onClick={onClose}
                 >
                     <motion.div
@@ -31,7 +34,7 @@ export default function DeleteConfirmModal({
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.9, opacity: 0 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl"
+                        className="bg-white rounded-2xl max-w-md w-full mx-auto p-6 shadow-2xl"
                     >
                         {/* Icon */}
                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
@@ -77,6 +80,7 @@ export default function DeleteConfirmModal({
                     </motion.div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }
