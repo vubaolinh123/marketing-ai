@@ -304,7 +304,7 @@ export default function ArticleDetailModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1300] bg-black/65 backdrop-blur-sm flex items-start justify-center px-2 sm:px-4 pt-28 sm:pt-32 pb-6 sm:pb-8 overflow-y-auto"
+                    className="fixed inset-0 z-[1300] bg-black/65 backdrop-blur-sm flex items-stretch justify-center p-5 overflow-hidden"
                     onClick={onClose}
                 >
                     <motion.div
@@ -312,7 +312,7 @@ export default function ArticleDetailModal({
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full md:w-[95vw] lg:max-w-7xl xl:max-w-[1450px] mx-auto h-[calc(100dvh-6.5rem)] sm:h-[calc(100dvh-8.5rem)] md:h-[calc(100dvh-9rem)] bg-white rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-200"
+                        className="w-full lg:max-w-7xl xl:max-w-[1450px] mx-auto h-full bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-gray-200"
                     >
                         {/* Header */}
                         <div className="bg-gradient-to-r from-[#1F2937] to-[#111827] px-4 md:px-6 py-4 text-white flex-shrink-0 border-b border-white/10">

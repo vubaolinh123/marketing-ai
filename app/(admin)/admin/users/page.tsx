@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { adminUserApi, type AdminUser } from '@/lib/api';
 import { showError, showSuccess } from '@/lib/toast';
 import dynamic from 'next/dynamic';
+import DeleteUserConfirmModal from './_components/DeleteUserConfirmModal';
 
 const Pagination = dynamic(() => import('../article/list/_components/Pagination'), { ssr: false });
 
@@ -26,6 +27,8 @@ interface EditUserFormState {
     newPassword: string;
     confirmNewPassword: string;
 }
+
+type DeleteUserTarget = Pick<AdminUser, 'id' | 'name' | 'email'>;
 
 const DEFAULT_CREATE_FORM: CreateUserFormState = {
     name: '',
@@ -76,6 +79,8 @@ export default function AdminUsersPage() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editForm, setEditForm] = useState<EditUserFormState | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+    const [deleteTargetUser, setDeleteTargetUser] = useState<DeleteUserTarget | null>(null);
 
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState<'' | 'user' | 'admin'>('');
@@ -272,6 +277,54 @@ export default function AdminUsersPage() {
         showSuccess(`Đã chuyển ngữ cảnh sang ${target.name}`);
     };
 
+    const handleOpenDeleteModal = (target: AdminUser) => {
+        if (!user?.id || user.id === target.id) {
+            showError('Bạn không thể xóa tài khoản đang đăng nhập');
+            return;
+        }
+
+        setDeleteTargetUser({
+            id: target.id,
+            name: target.name,
+            email: target.email
+        });
+    };
+
+    const handleCloseDeleteModal = () => {
+        if (deletingUserId) return;
+        setDeleteTargetUser(null);
+    };
+
+    const handleDeleteUser = async (target: DeleteUserTarget) => {
+        if (!user?.id || user.id === target.id) {
+            showError('Bạn không thể xóa tài khoản đang đăng nhập');
+            return;
+        }
+
+        try {
+            setDeletingUserId(target.id);
+            const response = await adminUserApi.deleteUser(target.id);
+
+            if (!response.success) {
+                throw new Error(response.message || 'Không thể xóa người dùng');
+            }
+
+            showSuccess('Xóa người dùng thành công');
+            fetchUsers();
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Không thể xóa người dùng';
+            showError(message);
+        } finally {
+            setDeleteTargetUser((prev) => (prev?.id === target.id ? null : prev));
+            setDeletingUserId((prev) => (prev === target.id ? null : prev));
+        }
+    };
+
+    const handleConfirmDeleteUser = async () => {
+        if (!deleteTargetUser) return;
+        await handleDeleteUser(deleteTargetUser);
+    };
+
     const filteredCountText = useMemo(() => {
         if (isLoading) return 'Đang tải dữ liệu...';
         return `Hiển thị ${users.length} người dùng trên trang này`;
@@ -411,74 +464,91 @@ export default function AdminUsersPage() {
                                 </tr>
                             )}
 
-                            {!isLoading && users.map((item, index) => (
-                                <motion.tr
-                                    key={item.id}
-                                    initial={{ opacity: 0, y: 6 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.03 }}
-                                    className="border-t border-gray-100 hover:bg-[#F8FBFF]"
-                                >
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-[#4A90D9]/20 text-[#1E40AF] flex items-center justify-center font-bold text-sm">
-                                                {item.name?.charAt(0).toUpperCase()}
+                            {!isLoading && users.map((item, index) => {
+                                const isSelf = user?.id === item.id;
+                                const isDeleting = deletingUserId === item.id;
+
+                                return (
+                                    <motion.tr
+                                        key={item.id}
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.03 }}
+                                        className="border-t border-gray-100 hover:bg-[#F8FBFF]"
+                                    >
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-[#4A90D9]/20 text-[#1E40AF] flex items-center justify-center font-bold text-sm">
+                                                    {item.name?.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium text-gray-900">{item.name}</div>
+                                                    <div className="text-xs text-gray-500">{item.email}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-medium text-gray-900">{item.name}</div>
-                                                <div className="text-xs text-gray-500">{item.email}</div>
+                                        </td>
+
+                                        <td className="px-4 py-3">
+                                            <select
+                                                value={item.role}
+                                                onChange={(e) => handleRoleChange(item, e.target.value as 'admin' | 'user')}
+                                                className={`text-xs px-2 py-1 rounded-full border font-semibold ${
+                                                    item.role === 'admin'
+                                                        ? 'bg-violet-100 text-violet-700 border-violet-200'
+                                                        : 'bg-blue-100 text-blue-700 border-blue-200'
+                                                }`}
+                                            >
+                                                <option value="user">user</option>
+                                                <option value="admin">admin</option>
+                                            </select>
+                                        </td>
+
+                                        <td className="px-4 py-3">
+                                            <button
+                                                onClick={() => handleToggleStatus(item)}
+                                                className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-colors ${
+                                                    item.isActive
+                                                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
+                                                        : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
+                                                }`}
+                                            >
+                                                {item.isActive ? 'Hoạt động' : 'Tạm khóa'}
+                                            </button>
+                                        </td>
+
+                                        <td className="px-4 py-3 text-sm text-gray-600">{formatDate(item.createdAt)}</td>
+
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleOpenEditModal(item)}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF4FF] text-[#1646C7] hover:bg-[#E2ECFF] transition-colors"
+                                                >
+                                                    Sửa
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSwitchAs(item)}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#FFD700]/30 text-gray-900 hover:bg-[#FFD700]/50 transition-colors"
+                                                >
+                                                    Switch user
+                                                </button>
+                                                <button
+                                                    onClick={() => handleOpenDeleteModal(item)}
+                                                    disabled={isSelf || isDeleting}
+                                                    title={isSelf ? 'Không thể xóa tài khoản đang đăng nhập' : undefined}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                                                        isSelf || isDeleting
+                                                            ? 'bg-red-100 text-red-300 cursor-not-allowed border border-red-200'
+                                                            : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
+                                                    }`}
+                                                >
+                                                    {isDeleting ? 'Đang xóa...' : 'Xóa'}
+                                                </button>
                                             </div>
-                                        </div>
-                                    </td>
-
-                                    <td className="px-4 py-3">
-                                        <select
-                                            value={item.role}
-                                            onChange={(e) => handleRoleChange(item, e.target.value as 'admin' | 'user')}
-                                            className={`text-xs px-2 py-1 rounded-full border font-semibold ${
-                                                item.role === 'admin'
-                                                    ? 'bg-violet-100 text-violet-700 border-violet-200'
-                                                    : 'bg-blue-100 text-blue-700 border-blue-200'
-                                            }`}
-                                        >
-                                            <option value="user">user</option>
-                                            <option value="admin">admin</option>
-                                        </select>
-                                    </td>
-
-                                    <td className="px-4 py-3">
-                                        <button
-                                            onClick={() => handleToggleStatus(item)}
-                                            className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-colors ${
-                                                item.isActive
-                                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
-                                                    : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
-                                            }`}
-                                        >
-                                            {item.isActive ? 'Hoạt động' : 'Tạm khóa'}
-                                        </button>
-                                    </td>
-
-                                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(item.createdAt)}</td>
-
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => handleOpenEditModal(item)}
-                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF4FF] text-[#1646C7] hover:bg-[#E2ECFF] transition-colors"
-                                            >
-                                                Sửa
-                                            </button>
-                                            <button
-                                                onClick={() => handleSwitchAs(item)}
-                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#FFD700]/30 text-gray-900 hover:bg-[#FFD700]/50 transition-colors"
-                                            >
-                                                Switch user
-                                            </button>
-                                        </div>
-                                    </td>
-                                </motion.tr>
-                            ))}
+                                        </td>
+                                    </motion.tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -679,6 +749,14 @@ export default function AdminUsersPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <DeleteUserConfirmModal
+                isOpen={!!deleteTargetUser}
+                targetUser={deleteTargetUser}
+                isDeleting={!!deleteTargetUser && deletingUserId === deleteTargetUser.id}
+                onClose={handleCloseDeleteModal}
+                onConfirm={handleConfirmDeleteUser}
+            />
         </motion.div>
     );
 }

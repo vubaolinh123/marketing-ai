@@ -119,7 +119,7 @@ export default function ImageCard({ image, onView, onDownload, onDelete, index }
                 {!showOverlayActions && (
                     <button
                         onClick={() => onDelete(image)}
-                        className="absolute top-2 left-2 p-2 bg-red-500/95 rounded-lg text-white hover:bg-red-600 transition-colors shadow"
+                        className="absolute top-2 left-2 z-30 p-2 bg-red-500/95 rounded-lg text-white hover:bg-red-600 transition-colors shadow"
                         title={isLikelyRunning ? 'Hủy tiến trình & xóa' : 'Xóa'}
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,7 +137,7 @@ export default function ImageCard({ image, onView, onDownload, onDelete, index }
                 </div>
 
                 {totalAngles > 1 && (
-                    <div className="absolute top-2 left-2 px-2 py-1 bg-amber-100/90 text-amber-700 rounded-full text-xs font-medium">
+                    <div className="absolute top-10 right-2 z-10 px-2 py-1 bg-amber-100/90 text-amber-700 rounded-full text-xs font-medium">
                         {totalAngles} góc
                     </div>
                 )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProductImage, getImageUrl } from '@/lib/api';
 import { backgroundOptions, getCameraAngleLabel, outputSizeOptions } from '@/lib/fakeData/image';
@@ -50,16 +50,16 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
 
     const coverImage = generatedImages.find(item => item.imageUrl && item.status !== 'failed') || generatedImages[0];
     const selectedFallback = coverImage?.imageUrl || coverImage?.angle || '';
-    const [selectedKey, setSelectedKey] = useState('');
-
-    useEffect(() => {
-        setSelectedKey(selectedFallback);
-    }, [image?._id, selectedFallback]);
+    const [selection, setSelection] = useState<{ imageId: string; key: string }>({ imageId: '', key: '' });
+    const currentImageId = image?._id || '';
+    const activeSelectedKey = selection.imageId === currentImageId
+        ? (selection.key || selectedFallback)
+        : selectedFallback;
 
     const selectedImage = useMemo(() => {
         if (!generatedImages.length) return undefined;
-        return generatedImages.find(item => (item.imageUrl || item.angle || '') === selectedKey) || coverImage || generatedImages[0];
-    }, [generatedImages, selectedKey, coverImage]);
+        return generatedImages.find(item => (item.imageUrl || item.angle || '') === activeSelectedKey) || coverImage || generatedImages[0];
+    }, [generatedImages, activeSelectedKey, coverImage]);
 
     const imageUrl = selectedImage?.imageUrl ? getImageUrl(selectedImage.imageUrl) : '';
 
@@ -74,14 +74,14 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[120] flex items-start justify-center px-4 sm:px-6 pt-24 sm:pt-28 pb-6 sm:pb-8 overflow-y-auto bg-black/70 backdrop-blur-sm"
+                className="fixed inset-0 z-[120] flex items-stretch justify-center p-5 overflow-hidden bg-black/70 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] max-h-[calc(100dvh-7.5rem)] sm:max-h-[calc(100dvh-9rem)] overflow-hidden border border-gray-200"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1540px] h-full overflow-hidden border border-gray-200 flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -103,15 +103,15 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                     </div>
 
                     {/* Image + Info */}
-                    <div className="p-4 bg-gray-50">
-                        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4">
-                            <div className="space-y-4 min-w-0">
-                                <div className="relative rounded-xl overflow-hidden bg-white shadow-inner min-h-[45vh] max-h-[62vh] flex items-center justify-center">
+                    <div className="flex-1 min-h-0 p-4 sm:p-5 bg-gray-50 overflow-hidden">
+                        <div className="h-full min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 lg:gap-5">
+                            <div className="min-h-0 flex flex-col gap-4">
+                                <div className="relative flex-1 min-h-0 rounded-xl overflow-hidden bg-white border border-gray-200 shadow-inner p-2 sm:p-3 flex items-center justify-center">
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
                                             alt={image.title}
-                                            className="max-w-full max-h-[62vh] object-contain"
+                                            className="max-w-full max-h-full object-contain"
                                         />
                                     ) : (
                                         <div className="py-20 text-gray-400 text-center">
@@ -124,9 +124,9 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                                 </div>
 
                                 {generatedImages.length > 1 && (
-                                    <div className="space-y-2">
+                                    <div className="shrink-0 space-y-2">
                                         <p className="text-sm font-medium text-gray-600">Bộ ảnh theo góc máy</p>
-                                        <div className="flex gap-3 overflow-x-auto pb-1">
+                                        <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-1">
                                             {generatedImages.map((item, index) => {
                                                 const key = item.imageUrl || item.angle || `${index}`;
                                                 const itemUrl = item.imageUrl ? getImageUrl(item.imageUrl) : '';
@@ -136,23 +136,23 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                                                     <button
                                                         key={`${item.angle}-${index}`}
                                                         type="button"
-                                                        onClick={() => setSelectedKey(key)}
+                                                        onClick={() => setSelection({ imageId: currentImageId, key })}
                                                         className={[
-                                                            'group w-[126px] min-w-[126px] rounded-lg border overflow-hidden bg-white text-left transition-all',
+                                                            'group w-32 sm:w-36 lg:w-40 shrink-0 rounded-lg border overflow-hidden bg-white text-left transition-all',
                                                             isActive
                                                                 ? 'border-[#F59E0B] ring-2 ring-amber-200 shadow-sm'
                                                                 : 'border-gray-200 hover:border-amber-300'
                                                         ].join(' ')}
                                                     >
-                                                        <div className="aspect-[4/5] bg-gray-50 flex items-center justify-center">
+                                                        <div className="h-20 sm:h-24 bg-gray-50 flex items-center justify-center p-1.5">
                                                             {itemUrl ? (
-                                                                <img src={itemUrl} alt={item.angle} className="w-full h-full object-cover" />
+                                                                <img src={itemUrl} alt={item.angle} className="w-full h-full object-contain" />
                                                             ) : (
                                                                 <span className="text-xs text-gray-400 px-2 text-center">Chưa có ảnh</span>
                                                             )}
                                                         </div>
-                                                        <div className="px-2 py-1.5 border-t border-gray-100">
-                                                            <p className="text-[11px] font-medium text-gray-700 truncate">{getCameraAngleLabel(item.angle)}</p>
+                                                        <div className="px-2.5 py-2 border-t border-gray-100">
+                                                            <p className="text-xs font-medium text-gray-700 truncate">{getCameraAngleLabel(item.angle)}</p>
                                                         </div>
                                                     </button>
                                                 );
@@ -162,7 +162,7 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                                 )}
                             </div>
 
-                            <div className="bg-white rounded-xl border border-gray-200 p-4 h-fit space-y-4">
+                            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 h-full min-h-0 overflow-y-auto space-y-5">
                                 <div>
                                     <p className="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-2">Thông tin ảnh</p>
                                     <div className="grid grid-cols-1 gap-2 text-sm">
@@ -217,7 +217,7 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 border-t border-gray-100 flex items-center justify-between">
+                    <div className="p-3 sm:p-4 border-t border-gray-100 flex items-center justify-between shrink-0">
                         <div className="text-sm text-gray-500">
                             {generatedImages.length > 1 ? `${generatedImages.length} góc máy đã tạo` : '1 ảnh đã tạo'}
                         </div>

@@ -54,7 +54,7 @@ const tools = [
 
 export default function LoginPage() {
     return (
-        <section className="min-h-screen flex items-center justify-center py-12 px-4 relative overflow-hidden">
+        <section className="min-h-dvh flex items-start sm:items-center justify-center pt-24 sm:pt-28 lg:pt-32 pb-10 sm:pb-12 px-4 relative overflow-hidden">
             {/* Blue Gradient Background - matching Hero */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#87CEEB] via-[#4A90D9] to-[#E0EFFF]" />
 
@@ -76,7 +76,7 @@ export default function LoginPage() {
 
             {/* Login Card */}
             <div className="relative z-10 w-full max-w-md animate-fade-in">
-                <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8 md:p-10">
+                <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-6 sm:p-8 md:p-10">
                     {/* Header */}
                     <div className="text-center mb-8">
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -92,7 +92,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Tools Preview */}
-                <div className="mt-8 text-center animate-slide-up stagger-2">
+                <div className="mt-6 sm:mt-8 text-center animate-slide-up stagger-2">
                     <p className="text-sm text-white/80 mb-4 font-medium">Công cụ AI có sẵn</p>
                     <div className="flex items-center justify-center gap-3 flex-wrap">
                         {tools.map((tool, index) => (

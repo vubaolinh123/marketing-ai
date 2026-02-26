@@ -82,14 +82,14 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[1300] flex items-start justify-center px-3 md:px-4 pt-28 sm:pt-32 pb-6 sm:pb-8 overflow-y-auto bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-[1300] flex items-stretch justify-center p-5 overflow-hidden bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] max-h-[calc(100dvh-7.5rem)] sm:max-h-[calc(100dvh-9rem)] overflow-hidden flex flex-col"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] h-full overflow-hidden flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}

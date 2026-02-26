@@ -65,6 +65,11 @@ export const adminUserApi = {
         return response.data;
     },
 
+    async deleteUser(userId: string): Promise<ApiResponse<null>> {
+        const response = await api.delete<ApiResponse<null>>(`/admin/users/${userId}`);
+        return response.data;
+    },
+
     async resetUserPassword(userId: string, newPassword: string): Promise<ApiResponse<null>> {
         const response = await api.patch<ApiResponse<null>>(`/admin/users/${userId}/password`, { newPassword });
         return response.data;

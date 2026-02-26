@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
 
 const navItems = [
     { label: 'Trang chủ', href: '/', isActive: true },
@@ -13,6 +14,10 @@ const navItems = [
 export default function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { isAuthenticated, isLoading } = useAuth();
+
+    const ctaHref = !isLoading && isAuthenticated ? '/admin' : '/login';
+    const ctaLabel = !isLoading && isAuthenticated ? 'Admin' : 'Đăng nhập';
 
     useEffect(() => {
         const handleScroll = () => {
@@ -82,9 +87,9 @@ export default function Header() {
 
                     {/* Desktop CTA Button - Yellow with arrow */}
                     <div className="hidden md:flex items-center">
-                        <Link href="/login">
+                        <Link href={ctaHref}>
                             <button className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-full bg-[#FFD700] hover:bg-[#FFEC4D] text-gray-900 font-semibold text-sm transition-all shadow-md hover:shadow-lg">
-                                Đăng nhập
+                                {ctaLabel}
                                 <svg
                                     className="w-4 h-4"
                                     fill="none"
@@ -151,9 +156,13 @@ export default function Header() {
                             </Link>
                         ))}
                         <div className="pt-2 border-t border-gray-100">
-                            <Link href="/login" className="block">
+                            <Link
+                                href={ctaHref}
+                                className="block"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
                                 <button className="w-full inline-flex items-center justify-center gap-2 px-6 h-12 rounded-xl bg-[#FFD700] hover:bg-[#FFEC4D] text-gray-900 font-semibold transition-all shadow-md">
-                                    Đăng nhập
+                                    {ctaLabel}
                                     <svg
                                         className="w-4 h-4"
                                         fill="none"
