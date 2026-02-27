@@ -84,6 +84,11 @@ const shouldSkipAuthRefresh = (url?: string): boolean => {
         url.includes('/auth/logout');
 };
 
+const isAuthRefreshRequest = (url?: string): boolean => {
+    if (!url) return false;
+    return url.includes('/auth/refresh');
+};
+
 const shouldAttachActAsHeader = (url?: string): boolean => {
     if (!url) return false;
 
@@ -161,8 +166,10 @@ api.interceptors.response.use(
             }
         }
 
+        const isRefresh401 = status === 401 && isAuthRefreshRequest(originalRequest?.url);
+
         // Log error in development - more detailed
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && !isRefresh401) {
             console.error(`❌ Error ${status}:`, message);
             console.error('   Full error:', {
                 code: error.code,
@@ -215,6 +222,10 @@ api.interceptors.response.use(
         // Handle specific error codes
         switch (status) {
             case 401:
+                if (isAuthRefreshRequest(originalRequest?.url)) {
+                    break;
+                }
+
                 // Unauthorized - Clear token and redirect to login
                 removeToken();
                 clearActAsUserId();

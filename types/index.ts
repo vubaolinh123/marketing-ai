@@ -18,10 +18,39 @@ export interface AuthState {
     isLoading: boolean;
 }
 
+export type LoginGeoPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'error' | 'unknown';
+
+export interface LoginBrowserGeo {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+    capturedAt: string;
+}
+
+export interface LoginDeviceMeta {
+    platform: string;
+    language: string;
+    timezone: string;
+    screen: {
+        width: number;
+        height: number;
+        pixelRatio?: number;
+    } | string;
+    deviceMemory?: number;
+    deviceCores?: number;
+}
+
+export interface LoginContext {
+    geoPermissionState?: LoginGeoPermissionState;
+    browserGeo?: LoginBrowserGeo;
+    deviceMeta?: LoginDeviceMeta;
+}
+
 export interface LoginCredentials {
     email: string;
     password: string;
     rememberMe?: boolean;
+    loginContext?: LoginContext;
 }
 
 export interface Feature {

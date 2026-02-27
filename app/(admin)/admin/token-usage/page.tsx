@@ -17,30 +17,56 @@ import { showError } from '@/lib/toast';
 const Pagination = dynamic(() => import('../article/list/_components/Pagination'), { ssr: false });
 
 const USERS_PAGE_SIZE = 10;
+const TOKEN_DEBUG_RECENT_LIMIT = 12;
 
 const EMPTY_SUMMARY: TokenUsageSummaryData = {
     totals: {
         totalTokens: 0,
         promptTokens: 0,
         completionTokens: 0,
+        supplementalTokens: 0,
+        thoughtTokens: 0,
+        cachedTokens: 0,
+        toolUseTokens: 0,
+        otherKnownTokens: 0,
+        explainedSupplementalTokens: 0,
+        unexplainedTokens: 0,
         requestCount: 0,
         activeUsers: 0
     },
     timeline: [],
     topTools: [],
-    topUsers: []
+    topUsers: [],
+    topFeatures: [],
+    discrepancy: {
+        supplementalTokens: 0,
+        thoughtTokens: 0,
+        cachedTokens: 0,
+        toolUseTokens: 0,
+        otherKnownTokens: 0,
+        explainedSupplementalTokens: 0,
+        unexplainedTokens: 0
+    }
 };
+
+const supplementalBuckets = [
+    { key: 'thoughtTokens', label: 'Suy luận nội bộ' },
+    { key: 'cachedTokens', label: 'Token từ cache' },
+    { key: 'toolUseTokens', label: 'Token gọi công cụ' },
+    { key: 'otherKnownTokens', label: 'Phần khác đã biết' },
+    { key: 'unexplainedTokens', label: 'Chưa giải thích' }
+] as const;
 
 const toolBuckets = [
     {
         id: 'article',
-        label: 'Article',
+        label: 'Bài viết',
         color: 'from-[#3B82F6] to-[#1D4ED8]',
         matches: ['article', 'blog', 'content']
     },
     {
         id: 'image',
-        label: 'Image',
+        label: 'Hình ảnh',
         color: 'from-[#8B5CF6] to-[#6D28D9]',
         matches: ['image', 'photo', 'product-image', 'img']
     },
@@ -76,13 +102,18 @@ const itemVariants = {
 };
 
 function getDefaultDateRange() {
+    const toDateInput = (value: Date) => {
+        const localDate = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+        return localDate.toISOString().slice(0, 10);
+    };
+
     const to = new Date();
     const from = new Date();
     from.setDate(from.getDate() - 29);
 
     return {
-        fromDate: from.toISOString().slice(0, 10),
-        toDate: to.toISOString().slice(0, 10)
+        fromDate: toDateInput(from),
+        toDate: toDateInput(to)
     };
 }
 
@@ -135,6 +166,16 @@ export default function AdminTokenUsagePage() {
     const [isSummaryLoading, setIsSummaryLoading] = useState(true);
     const [isUsersLoading, setIsUsersLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [debugRecent, setDebugRecent] = useState<Array<{
+        dateKey: string;
+        userId: string;
+        tool: string;
+        requestCount: number;
+        totalTokens: number;
+        lastRequestAt?: string | null;
+        updatedAt?: string | null;
+        model?: string;
+    }>>([]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -160,10 +201,18 @@ export default function AdminTokenUsagePage() {
             }
 
             setSummary({
-                totals: response.data.totals || EMPTY_SUMMARY.totals,
+                totals: {
+                    ...EMPTY_SUMMARY.totals,
+                    ...(response.data.totals || {})
+                },
                 timeline: response.data.timeline || [],
                 topTools: response.data.topTools || [],
-                topUsers: response.data.topUsers || []
+                topUsers: response.data.topUsers || [],
+                topFeatures: response.data.topFeatures || [],
+                discrepancy: {
+                    ...EMPTY_SUMMARY.discrepancy,
+                    ...(response.data.discrepancy || {})
+                }
             });
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Không thể tải thống kê token usage';
@@ -201,6 +250,16 @@ export default function AdminTokenUsagePage() {
         }
     }, [currentPage, hasInvalidRange, requestParams]);
 
+    const fetchRecentDebug = useCallback(async () => {
+        try {
+            const response = await tokenUsageApi.getTokenUsageDebugRecent(TOKEN_DEBUG_RECENT_LIMIT);
+            if (!response.success || !response.data) return;
+            setDebugRecent(response.data.items || []);
+        } catch {
+            // silent in UI, debug-only panel
+        }
+    }, []);
+
     useEffect(() => {
         setCurrentPage(1);
     }, [fromDate, toDate, groupBy, selectedUserId]);
@@ -213,6 +272,10 @@ export default function AdminTokenUsagePage() {
         fetchUsers();
     }, [fetchUsers]);
 
+    useEffect(() => {
+        fetchRecentDebug();
+    }, [fetchRecentDebug]);
+
     const handleRefresh = async () => {
         if (hasInvalidRange) {
             showError('Khoảng ngày không hợp lệ. Vui lòng kiểm tra lại.');
@@ -221,7 +284,7 @@ export default function AdminTokenUsagePage() {
 
         try {
             setIsRefreshing(true);
-            await Promise.all([fetchSummary(), fetchUsers()]);
+            await Promise.all([fetchSummary(), fetchUsers(), fetchRecentDebug()]);
         } finally {
             setIsRefreshing(false);
         }
@@ -258,6 +321,10 @@ export default function AdminTokenUsagePage() {
         return Math.max(...summary.topUsers.map((item) => item.totalTokens || 0), 1);
     }, [summary.topUsers]);
 
+    const sortedTopFeatures = useMemo(() => {
+        return [...summary.topFeatures].sort((a, b) => (b.totalTokens || 0) - (a.totalTokens || 0));
+    }, [summary.topFeatures]);
+
     if (isAuthLoading) {
         return (
             <div className="w-[96%] max-w-[1700px] mx-auto space-y-4 animate-pulse">
@@ -290,8 +357,8 @@ export default function AdminTokenUsagePage() {
         >
             <motion.div variants={itemVariants} className="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Gemini token usage</h1>
-                    <p className="text-gray-600 mt-1">Theo dõi mức tiêu thụ token theo thời gian, công cụ và người dùng.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Thống kê token Gemini</h1>
+                    <p className="text-gray-600 mt-1">Theo dõi mức tiêu thụ token theo thời gian, theo tính năng và theo người dùng.</p>
                 </div>
 
                 <Button
@@ -378,30 +445,70 @@ export default function AdminTokenUsagePage() {
                 )}
             </motion.div>
 
-            <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <motion.div variants={itemVariants} className="bg-[#F8FBFF] border border-[#DCEAFF] rounded-2xl p-4 md:p-5 mb-6">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-2">Cách tính tổng token &amp; phần chênh lệch</h2>
+                <div className="space-y-2 text-sm text-gray-700">
+                    <p>
+                        <span className="font-semibold text-gray-900">Tổng token</span> = Prompt + Completion + Supplemental
+                    </p>
+                    <p>
+                        <span className="font-semibold text-gray-900">Supplemental</span> = Thought + Cached + ToolUse + OtherKnown + Unexplained
+                    </p>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                    <div className="rounded-xl bg-white border border-gray-200 px-3 py-2">
+                        <div className="text-gray-500">Supplemental hiện có</div>
+                        <div className="font-semibold text-gray-900">{isSummaryLoading ? '...' : formatNumber(summary.totals.supplementalTokens)}</div>
+                    </div>
+                    <div className="rounded-xl bg-white border border-gray-200 px-3 py-2">
+                        <div className="text-gray-500">Phần đã giải thích</div>
+                        <div className="font-semibold text-gray-900">{isSummaryLoading ? '...' : formatNumber(summary.discrepancy.explainedSupplementalTokens)}</div>
+                    </div>
+                    <div className="rounded-xl bg-white border border-gray-200 px-3 py-2">
+                        <div className="text-gray-500">Phần chưa giải thích</div>
+                        <div className="font-semibold text-amber-700">{isSummaryLoading ? '...' : formatNumber(summary.discrepancy.unexplainedTokens)}</div>
+                    </div>
+                    <div className="rounded-xl bg-white border border-gray-200 px-3 py-2">
+                        <div className="text-gray-500">Sai lệch (Supplemental - Explained)</div>
+                        <div className="font-semibold text-gray-900">
+                            {isSummaryLoading
+                                ? '...'
+                                : formatNumber((summary.totals.supplementalTokens || 0) - (summary.discrepancy.explainedSupplementalTokens || 0))}
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
                 {[
                     {
-                        label: 'Total tokens',
+                        label: 'Tổng token',
                         value: summary.totals.totalTokens,
                         color: 'from-[#3B82F6] to-[#1D4ED8]'
                     },
                     {
-                        label: 'Prompt tokens',
+                        label: 'Prompt',
                         value: summary.totals.promptTokens,
                         color: 'from-[#0EA5E9] to-[#0369A1]'
                     },
                     {
-                        label: 'Completion tokens',
+                        label: 'Completion',
                         value: summary.totals.completionTokens,
                         color: 'from-[#8B5CF6] to-[#6D28D9]'
                     },
                     {
-                        label: 'Request count',
+                        label: 'Supplemental',
+                        value: summary.totals.supplementalTokens,
+                        color: 'from-[#7C3AED] to-[#5B21B6]'
+                    },
+                    {
+                        label: 'Số request',
                         value: summary.totals.requestCount,
                         color: 'from-[#F97316] to-[#EA580C]'
                     },
                     {
-                        label: 'Active users',
+                        label: 'Người dùng hoạt động',
                         value: summary.totals.activeUsers,
                         color: 'from-[#14B8A6] to-[#0F766E]'
                     }
@@ -424,10 +531,22 @@ export default function AdminTokenUsagePage() {
                 ))}
             </motion.div>
 
+            <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-gray-200 p-4 md:p-5 mb-6 shadow-sm">
+                <div className="text-sm font-medium text-gray-700 mb-3">Chi tiết Supplemental</div>
+                <div className="flex flex-wrap gap-2">
+                    {supplementalBuckets.map((bucket) => (
+                        <div key={bucket.key} className="rounded-full border border-gray-200 bg-[#F7FAFF] px-3 py-1.5 text-xs text-gray-700">
+                            <span className="font-medium">{bucket.label}:</span>{' '}
+                            <span className="font-semibold text-gray-900">{isSummaryLoading ? '...' : formatNumber(summary.totals[bucket.key])}</span>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
+
             <motion.div variants={itemVariants} className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
                 <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-5">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">Timeline token usage</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">Diễn biến token theo thời gian</h2>
                         <span className="text-sm text-gray-500">{groupBy.toUpperCase()}</span>
                     </div>
 
@@ -460,7 +579,7 @@ export default function AdminTokenUsagePage() {
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-5">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Tool distribution</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Phân bổ theo nhóm tính năng</h2>
 
                     {isSummaryLoading ? (
                         <div className="space-y-4 animate-pulse">
@@ -480,7 +599,7 @@ export default function AdminTokenUsagePage() {
                                     <div key={item.id}>
                                         <div className="flex items-center justify-between mb-1.5">
                                             <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                                            <span className="text-xs text-gray-500">{formatShortNumber(item.totalTokens)} tokens</span>
+                                            <span className="text-xs text-gray-500">{formatShortNumber(item.totalTokens)} token</span>
                                         </div>
                                         <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
                                             <div
@@ -488,7 +607,7 @@ export default function AdminTokenUsagePage() {
                                                 style={{ width: `${widthPercent}%` }}
                                             />
                                         </div>
-                                        <div className="mt-1 text-xs text-gray-500">{formatNumber(item.requestCount)} requests</div>
+                                        <div className="mt-1 text-xs text-gray-500">{formatNumber(item.requestCount)} yêu cầu</div>
                                     </div>
                                 );
                             })}
@@ -498,7 +617,58 @@ export default function AdminTokenUsagePage() {
             </motion.div>
 
             <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-5 mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Top users usage</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Chi tiết theo API/feature</h2>
+
+                {isSummaryLoading ? (
+                    <div className="space-y-3 animate-pulse">
+                        {[1, 2, 3, 4].map((item) => (
+                            <div key={item} className="h-14 rounded-xl bg-[#F6F9FF] border border-gray-100" />
+                        ))}
+                    </div>
+                ) : sortedTopFeatures.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-gray-200 bg-[#F8FBFF] p-6 text-center text-gray-500">
+                        Chưa có dữ liệu API/feature cho bộ lọc hiện tại.
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[980px]">
+                            <thead>
+                                <tr className="bg-[#F3F8FF] text-left text-xs uppercase tracking-wide text-gray-600">
+                                    <th className="px-4 py-3 font-semibold">API/Feature</th>
+                                    <th className="px-4 py-3 font-semibold">Tổng</th>
+                                    <th className="px-4 py-3 font-semibold">Prompt</th>
+                                    <th className="px-4 py-3 font-semibold">Completion</th>
+                                    <th className="px-4 py-3 font-semibold">Supplemental</th>
+                                    <th className="px-4 py-3 font-semibold">Chi tiết Supplemental</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sortedTopFeatures.map((item, index) => (
+                                    <tr key={`${item.featureKey}-${index}`} className="border-t border-gray-100 hover:bg-[#F8FBFF]">
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.featureKey || '--'}</td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatNumber(item.totalTokens)}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.promptTokens)}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.completionTokens)}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.supplementalTokens)}</td>
+                                        <td className="px-4 py-3 text-xs text-gray-600">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <span className="rounded-full bg-gray-100 px-2 py-1">Thought: {formatShortNumber(item.thoughtTokens)}</span>
+                                                <span className="rounded-full bg-gray-100 px-2 py-1">Cached: {formatShortNumber(item.cachedTokens)}</span>
+                                                <span className="rounded-full bg-gray-100 px-2 py-1">ToolUse: {formatShortNumber(item.toolUseTokens)}</span>
+                                                <span className="rounded-full bg-gray-100 px-2 py-1">Other: {formatShortNumber(item.otherKnownTokens)}</span>
+                                                <span className="rounded-full bg-amber-50 text-amber-700 px-2 py-1">Unexplained: {formatShortNumber(item.unexplainedTokens)}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-5 mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Người dùng tiêu thụ nhiều token</h2>
 
                 {isSummaryLoading ? (
                     <div className="space-y-3 animate-pulse">
@@ -517,7 +687,7 @@ export default function AdminTokenUsagePage() {
                                 <div className="flex items-center justify-between gap-3 mb-2">
                                     <div className="min-w-0">
                                         <div className="font-medium text-gray-900 truncate">{item.name}</div>
-                                        <div className="text-xs text-gray-500 truncate">{item.email || 'No email'}</div>
+                                        <div className="text-xs text-gray-500 truncate">{item.email || 'Không có email'}</div>
                                     </div>
                                     <div className="text-sm font-semibold text-gray-800">{formatNumber(item.totalTokens)}</div>
                                 </div>
@@ -542,22 +712,23 @@ export default function AdminTokenUsagePage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1050px]">
+                    <table className="w-full min-w-[1280px]">
                         <thead>
                             <tr className="bg-gradient-to-r from-[#E0EFFF] to-white text-left text-xs uppercase tracking-wide text-gray-600">
                                 <th className="px-4 py-3 font-semibold">Người dùng</th>
-                                <th className="px-4 py-3 font-semibold">Total</th>
+                                <th className="px-4 py-3 font-semibold">Tổng</th>
                                 <th className="px-4 py-3 font-semibold">Prompt</th>
                                 <th className="px-4 py-3 font-semibold">Completion</th>
-                                <th className="px-4 py-3 font-semibold">Requests</th>
-                                <th className="px-4 py-3 font-semibold">Tools</th>
+                                <th className="px-4 py-3 font-semibold">Supplemental</th>
+                                <th className="px-4 py-3 font-semibold">Chưa giải thích</th>
+                                <th className="px-4 py-3 font-semibold">Số yêu cầu</th>
                                 <th className="px-4 py-3 font-semibold">Lần dùng cuối</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isUsersLoading && (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                                         Đang tải dữ liệu người dùng...
                                     </td>
                                 </tr>
@@ -565,7 +736,7 @@ export default function AdminTokenUsagePage() {
 
                             {!isUsersLoading && users.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                                         Không có dữ liệu người dùng trong khoảng lọc hiện tại.
                                     </td>
                                 </tr>
@@ -585,7 +756,7 @@ export default function AdminTokenUsagePage() {
                                                 {item.name?.charAt(0).toUpperCase() || 'U'}
                                             </div>
                                             <div>
-                                                <div className="font-medium text-gray-900">{item.name || 'Unknown user'}</div>
+                                                <div className="font-medium text-gray-900">{item.name || 'Người dùng không xác định'}</div>
                                                 <div className="text-xs text-gray-500">{item.email || '--'}</div>
                                             </div>
                                         </div>
@@ -593,16 +764,51 @@ export default function AdminTokenUsagePage() {
                                     <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatNumber(item.totalTokens)}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.promptTokens)}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.completionTokens)}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.supplementalTokens)}</td>
+                                    <td className="px-4 py-3 text-sm text-amber-700">{formatNumber(item.unexplainedTokens)}</td>
                                     <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.requestCount)}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">
-                                        <div className="max-w-[260px] truncate">
-                                            {Array.isArray(item.activeTools) && item.activeTools.length > 0
-                                                ? item.activeTools.join(', ')
-                                                : '--'}
-                                        </div>
-                                    </td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{formatDateTime(item.lastUsedAt)}</td>
                                 </motion.tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-4 py-4 border-b border-gray-100">
+                    <h2 className="text-base font-semibold text-gray-900">Debug token gần nhất</h2>
+                    <p className="text-xs text-gray-500 mt-1">Dùng để đối chiếu khi nghi ngờ token không ghi vào thống kê.</p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[920px]">
+                        <thead>
+                            <tr className="bg-[#F7FAFF] text-left text-xs uppercase tracking-wide text-gray-600">
+                                <th className="px-4 py-3 font-semibold">Ngày</th>
+                                <th className="px-4 py-3 font-semibold">Tool</th>
+                                <th className="px-4 py-3 font-semibold">Model</th>
+                                <th className="px-4 py-3 font-semibold">Requests</th>
+                                <th className="px-4 py-3 font-semibold">Total</th>
+                                <th className="px-4 py-3 font-semibold">Last Request</th>
+                                <th className="px-4 py-3 font-semibold">Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {debugRecent.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-6 text-sm text-gray-500 text-center">Chưa có bản ghi debug gần đây.</td>
+                                </tr>
+                            )}
+                            {debugRecent.map((row, idx) => (
+                                <tr key={`${row.userId}-${row.dateKey}-${idx}`} className="border-t border-gray-100">
+                                    <td className="px-4 py-3 text-sm text-gray-700">{row.dateKey}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{row.tool || '--'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{row.model || '--'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(row.requestCount)}</td>
+                                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatNumber(row.totalTokens)}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(row.lastRequestAt || undefined)}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(row.updatedAt || undefined)}</td>
+                                </tr>
                             ))}
                         </tbody>
                     </table>

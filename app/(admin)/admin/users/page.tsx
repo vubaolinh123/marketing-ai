@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { adminUserApi, type AdminUser } from '@/lib/api';
+import { adminUserApi, authApi, type AdminUser } from '@/lib/api';
 import { showError, showSuccess } from '@/lib/toast';
 import dynamic from 'next/dynamic';
 import DeleteUserConfirmModal from './_components/DeleteUserConfirmModal';
+import UserSessionsModal from './_components/UserSessionsModal';
 
 const Pagination = dynamic(() => import('../article/list/_components/Pagination'), { ssr: false });
 
@@ -29,6 +30,7 @@ interface EditUserFormState {
 }
 
 type DeleteUserTarget = Pick<AdminUser, 'id' | 'name' | 'email'>;
+type SessionsTargetUser = Pick<AdminUser, 'id' | 'name' | 'email'>;
 
 const DEFAULT_CREATE_FORM: CreateUserFormState = {
     name: '',
@@ -81,6 +83,8 @@ export default function AdminUsersPage() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
     const [deleteTargetUser, setDeleteTargetUser] = useState<DeleteUserTarget | null>(null);
+    const [sessionsTargetUser, setSessionsTargetUser] = useState<SessionsTargetUser | null>(null);
+    const [isRevokingOtherSessions, setIsRevokingOtherSessions] = useState(false);
 
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState<'' | 'user' | 'admin'>('');
@@ -290,6 +294,18 @@ export default function AdminUsersPage() {
         });
     };
 
+    const handleOpenSessionsModal = (target: AdminUser) => {
+        setSessionsTargetUser({
+            id: target.id,
+            name: target.name,
+            email: target.email
+        });
+    };
+
+    const handleCloseSessionsModal = () => {
+        setSessionsTargetUser(null);
+    };
+
     const handleCloseDeleteModal = () => {
         if (deletingUserId) return;
         setDeleteTargetUser(null);
@@ -325,6 +341,29 @@ export default function AdminUsersPage() {
         await handleDeleteUser(deleteTargetUser);
     };
 
+    const handleRevokeOtherSessions = async () => {
+        try {
+            setIsRevokingOtherSessions(true);
+            const response = await authApi.revokeOtherSessions();
+
+            if (!response.success) {
+                throw new Error(response.message || 'Không thể đăng xuất các thiết bị khác');
+            }
+
+            const revokedCount = response.data?.revokedCount;
+            showSuccess(
+                typeof revokedCount === 'number'
+                    ? `Đã đăng xuất ${revokedCount} thiết bị khác`
+                    : 'Đã đăng xuất các thiết bị khác'
+            );
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Không thể đăng xuất các thiết bị khác';
+            showError(message);
+        } finally {
+            setIsRevokingOtherSessions(false);
+        }
+    };
+
     const filteredCountText = useMemo(() => {
         if (isLoading) return 'Đang tải dữ liệu...';
         return `Hiển thị ${users.length} người dùng trên trang này`;
@@ -353,16 +392,27 @@ export default function AdminUsersPage() {
                     <p className="text-gray-600 mt-1">{filteredCountText}</p>
                 </div>
 
-                <Button
-                    variant="primary"
-                    className="rounded-xl px-5"
-                    onClick={() => setShowCreateModal(true)}
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Tạo tài khoản mới
-                </Button>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Button
+                        variant="secondary"
+                        className="rounded-xl px-4 text-sm"
+                        onClick={handleRevokeOtherSessions}
+                        isLoading={isRevokingOtherSessions}
+                    >
+                        Đăng xuất thiết bị khác
+                    </Button>
+
+                    <Button
+                        variant="primary"
+                        className="rounded-xl px-5"
+                        onClick={() => setShowCreateModal(true)}
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Tạo tài khoản mới
+                    </Button>
+                </div>
             </motion.div>
 
             <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -519,12 +569,18 @@ export default function AdminUsersPage() {
                                         <td className="px-4 py-3 text-sm text-gray-600">{formatDate(item.createdAt)}</td>
 
                                         <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <button
                                                     onClick={() => handleOpenEditModal(item)}
                                                     className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF4FF] text-[#1646C7] hover:bg-[#E2ECFF] transition-colors"
                                                 >
                                                     Sửa
+                                                </button>
+                                                <button
+                                                    onClick={() => handleOpenSessionsModal(item)}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition-colors"
+                                                >
+                                                    Thiết bị
                                                 </button>
                                                 <button
                                                     onClick={() => handleSwitchAs(item)}
@@ -756,6 +812,12 @@ export default function AdminUsersPage() {
                 isDeleting={!!deleteTargetUser && deletingUserId === deleteTargetUser.id}
                 onClose={handleCloseDeleteModal}
                 onConfirm={handleConfirmDeleteUser}
+            />
+
+            <UserSessionsModal
+                isOpen={!!sessionsTargetUser}
+                targetUser={sessionsTargetUser}
+                onClose={handleCloseSessionsModal}
             />
         </motion.div>
     );

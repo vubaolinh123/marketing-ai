@@ -12,7 +12,7 @@ export type { ApiResponse, ApiError } from './api';
 
 // Auth API
 export { authApi } from './auth.api';
-export type { AuthUser, AuthMeResponse, LoginResponse, RegisterData, LoginData } from './auth.api';
+export type { AuthUser, AuthMeResponse, LoginResponse, RegisterData, LoginData, AuthSessionItem, AuthSessionsData } from './auth.api';
 
 // User API
 export { userApi } from './user.api';
@@ -25,7 +25,9 @@ export type {
     AdminUsersQuery,
     AdminUsersListData,
     CreateAdminUserPayload,
-    UpdateAdminUserPayload
+    UpdateAdminUserPayload,
+    AdminUserSession,
+    AdminUserSessionsData
 } from './adminUser.api';
 
 // Settings API
@@ -84,7 +86,9 @@ export type {
     TokenUsageTotals,
     TokenUsageTimelineItem,
     TokenUsageTopTool,
+    TokenUsageTopFeature,
     TokenUsageTopUser,
+    TokenUsageDiscrepancy,
     TokenUsagePagination,
     TokenUsageSummaryData,
     TokenUsageUsersParams,

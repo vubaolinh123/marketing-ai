@@ -30,6 +30,7 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = 'ai-content-auth';
+const REFRESH_HINT_KEY = 'ai-content-refresh-hint';
 
 type StoredAuthPayload = {
     user?: User | null;
@@ -62,6 +63,18 @@ function saveAuthToStorage(payload: StoredAuthPayload) {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
 }
 
+function setRefreshHint() {
+    localStorage.setItem(REFRESH_HINT_KEY, '1');
+}
+
+function hasRefreshHint(): boolean {
+    return localStorage.getItem(REFRESH_HINT_KEY) === '1';
+}
+
+function clearRefreshHint() {
+    localStorage.removeItem(REFRESH_HINT_KEY);
+}
+
 function readAuthFromStorage(): StoredAuthPayload {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return {};
@@ -76,7 +89,23 @@ function readAuthFromStorage(): StoredAuthPayload {
 function clearAuthStorage() {
     removeToken();
     clearActAsUserId();
+    clearRefreshHint();
     localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+function getErrorStatusCode(error: unknown): number | undefined {
+    if (!error || typeof error !== 'object') return undefined;
+
+    const withStatus = error as { statusCode?: number; response?: { status?: number } };
+    if (typeof withStatus.statusCode === 'number') {
+        return withStatus.statusCode;
+    }
+
+    if (typeof withStatus.response?.status === 'number') {
+        return withStatus.response.status;
+    }
+
+    return undefined;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -93,8 +122,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session on mount
     useEffect(() => {
         const checkAuth = async () => {
+            let hadAuthBefore = false;
+
+            const setUnauthenticatedState = () => {
+                setState({
+                    user: null,
+                    effectiveUser: null,
+                    isImpersonating: false,
+                    token: null,
+                    isAuthenticated: false,
+                    isLoading: false,
+                });
+            };
+
             try {
                 const token = getToken();
+                const refreshHint = hasRefreshHint();
+                hadAuthBefore = !!token || refreshHint;
 
                 if (token) {
                     // Verify token by calling getMe API
@@ -119,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         const isImpersonating = !!effectiveUser && user?.role === 'admin';
 
                         saveAuthToStorage({ user, effectiveUser });
+                        setRefreshHint();
 
                         if (!isImpersonating) {
                             clearActAsUserId();
@@ -136,6 +181,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     }
                 }
 
+                if (!hadAuthBefore) {
+                    setUnauthenticatedState();
+                    return;
+                }
+
                 // Try refresh cookie when access token missing/expired
                 const refreshResponse = await authApi.refresh();
                 if (refreshResponse.success && refreshResponse.data) {
@@ -146,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     }
 
                     saveAuthToStorage({ user, effectiveUser: null });
+                    setRefreshHint();
 
                     setState({
                         user,
@@ -159,23 +210,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
 
                 clearAuthStorage();
+
+                if (hadAuthBefore && typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+                    router.push('/login');
+                }
             } catch (error) {
-                console.error('Failed to verify auth:', error);
+                const statusCode = getErrorStatusCode(error);
+                const isExpectedBootstrap401 = statusCode === 401;
+
+                if (!isExpectedBootstrap401) {
+                    console.error('Failed to verify auth:', error);
+                }
+
                 clearAuthStorage();
+
+                if (hadAuthBefore && typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+                    router.push('/login');
+                }
             }
 
-            setState({
-                user: null,
-                effectiveUser: null,
-                isImpersonating: false,
-                token: null,
-                isAuthenticated: false,
-                isLoading: false,
-            });
+            setUnauthenticatedState();
         };
 
         checkAuth();
-    }, []);
+    }, [router]);
 
     const login = useCallback(
         async (credentials: LoginCredentials): Promise<{ success: boolean; error?: string; user?: User }> => {
@@ -185,7 +243,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const response = await authApi.login({
                     email: credentials.email,
                     password: credentials.password,
-                    rememberMe: !!credentials.rememberMe
+                    rememberMe: !!credentials.rememberMe,
+                    loginContext: credentials.loginContext
                 });
 
                 if (response.success && response.data) {
@@ -196,6 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     }
 
                     clearActAsUserId();
+                    setRefreshHint();
                     saveAuthToStorage({ user, effectiveUser: null });
 
                     setState({

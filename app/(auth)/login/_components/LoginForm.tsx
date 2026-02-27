@@ -4,6 +4,222 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { Button, Input } from '@/components/ui';
+import type { LoginContext, LoginDeviceMeta, LoginGeoPermissionState } from '@/types';
+
+const GEO_CAPTURE_TIMEOUT_MS = 8000;
+
+function getDeviceMeta(): LoginDeviceMeta {
+    const nav = navigator as Navigator & { deviceMemory?: number };
+
+    return {
+        platform: nav.platform || 'unknown',
+        language: nav.language || 'unknown',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown',
+        screen: {
+            width: window.screen?.width ?? 0,
+            height: window.screen?.height ?? 0,
+            pixelRatio: typeof window.devicePixelRatio === 'number' ? window.devicePixelRatio : undefined
+        },
+        deviceMemory: typeof nav.deviceMemory === 'number' ? nav.deviceMemory : undefined,
+        deviceCores: typeof nav.hardwareConcurrency === 'number' ? nav.hardwareConcurrency : undefined
+    };
+}
+
+function getCurrentPositionWithTimeout(timeoutMs: number): Promise<GeolocationPosition> {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('geolocation_unsupported'));
+            return;
+        }
+
+        let settled = false;
+        const timer = window.setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            reject(new Error('geolocation_timeout'));
+        }, timeoutMs);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                if (settled) return;
+                settled = true;
+                window.clearTimeout(timer);
+                resolve(position);
+            },
+            (error) => {
+                if (settled) return;
+                settled = true;
+                window.clearTimeout(timer);
+                reject(error);
+            },
+            {
+                enableHighAccuracy: false,
+                timeout: timeoutMs,
+                maximumAge: 0
+            }
+        );
+    });
+}
+
+async function readGeoPermissionState(): Promise<Exclude<LoginGeoPermissionState, 'granted'>> {
+    const nav = navigator as Navigator & {
+        permissions?: {
+            query: (descriptor: { name: string }) => Promise<{ state?: string }>;
+        };
+    };
+
+    if (!nav.permissions?.query) {
+        return 'unknown';
+    }
+
+    try {
+        const result = await nav.permissions.query({ name: 'geolocation' });
+        const state = String(result?.state || '').toLowerCase();
+
+        if (state === 'prompt') return 'prompt';
+        if (state === 'denied') return 'denied';
+        if (state === 'granted') return 'unknown';
+        return 'unknown';
+    } catch {
+        return 'unknown';
+    }
+}
+
+function resolveGeoPermissionState(error: unknown): LoginGeoPermissionState {
+    const errorCode = typeof error === 'object' && error !== null && 'code' in error
+        ? Number((error as { code?: number }).code)
+        : undefined;
+
+    if (errorCode === 1) {
+        return 'denied';
+    }
+
+    if (errorCode === 2 || errorCode === 3) {
+        return 'error';
+    }
+
+    return 'unknown';
+}
+
+async function collectLoginContext(): Promise<LoginContext> {
+    const loginContext: LoginContext = {
+        geoPermissionState: 'unknown',
+        deviceMeta: getDeviceMeta()
+    };
+
+    if (!navigator.geolocation) {
+        loginContext.geoPermissionState = 'unsupported';
+        return loginContext;
+    }
+
+    loginContext.geoPermissionState = await readGeoPermissionState();
+
+    try {
+        const position = await getCurrentPositionWithTimeout(GEO_CAPTURE_TIMEOUT_MS);
+
+        loginContext.geoPermissionState = 'granted';
+        loginContext.browserGeo = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            capturedAt: new Date().toISOString()
+        };
+    } catch (error) {
+        loginContext.geoPermissionState = resolveGeoPermissionState(error);
+    }
+
+    return loginContext;
+}
+
+type PermissionStatusTone = 'neutral' | 'info' | 'success' | 'warning';
+
+interface PermissionStatusView {
+    state: LoginGeoPermissionState | 'idle' | 'requesting';
+    title: string;
+    detail: string;
+    tone: PermissionStatusTone;
+}
+
+function getInitialPermissionStatus(): PermissionStatusView {
+    return {
+        state: 'idle',
+        title: 'Bước 1: Quyền vị trí',
+        detail: 'Hệ thống sẽ yêu cầu quyền vị trí trước khi gửi yêu cầu đăng nhập.',
+        tone: 'neutral'
+    };
+}
+
+function mapPermissionStatus(state: LoginGeoPermissionState): PermissionStatusView {
+    if (state === 'granted') {
+        return {
+            state,
+            title: 'Bước 1: Quyền vị trí - Đã cấp',
+            detail: 'Đã lấy thông tin vị trí từ trình duyệt. Tiếp tục đăng nhập.',
+            tone: 'success'
+        };
+    }
+
+    if (state === 'denied') {
+        return {
+            state,
+            title: 'Bước 1: Quyền vị trí - Đã từ chối',
+            detail: 'Bạn đã từ chối quyền vị trí. Hệ thống vẫn cho phép đăng nhập.',
+            tone: 'warning'
+        };
+    }
+
+    if (state === 'prompt') {
+        return {
+            state,
+            title: 'Bước 1: Quyền vị trí - Đang chờ xác nhận',
+            detail: 'Trình duyệt đang chờ bạn xác nhận quyền vị trí.',
+            tone: 'info'
+        };
+    }
+
+    if (state === 'unsupported') {
+        return {
+            state,
+            title: 'Bước 1: Quyền vị trí - Không hỗ trợ',
+            detail: 'Trình duyệt không hỗ trợ vị trí. Hệ thống vẫn cho phép đăng nhập.',
+            tone: 'neutral'
+        };
+    }
+
+    if (state === 'error') {
+        return {
+            state,
+            title: 'Bước 1: Quyền vị trí - Không lấy được',
+            detail: 'Không thể lấy vị trí lúc này. Hệ thống vẫn cho phép đăng nhập.',
+            tone: 'warning'
+        };
+    }
+
+    return {
+        state,
+        title: 'Bước 1: Quyền vị trí - Chưa xác định',
+        detail: 'Không xác định được trạng thái quyền vị trí, vẫn tiếp tục đăng nhập bình thường.',
+        tone: 'neutral'
+    };
+}
+
+function getStatusToneClass(tone: PermissionStatusTone): string {
+    if (tone === 'success') return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    if (tone === 'warning') return 'border-amber-200 bg-amber-50 text-amber-700';
+    if (tone === 'info') return 'border-blue-200 bg-blue-50 text-blue-700';
+    return 'border-slate-200 bg-slate-50 text-slate-700';
+}
+
+function waitForUiFrame(): Promise<void> {
+    return new Promise((resolve) => {
+        if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+            window.setTimeout(resolve, 0);
+            return;
+        }
+
+        window.requestAnimationFrame(() => resolve());
+    });
+}
 
 export default function LoginForm() {
     const router = useRouter();
@@ -13,11 +229,33 @@ export default function LoginForm() {
         password: '',
     });
     const [error, setError] = useState('');
+    const [geoHint, setGeoHint] = useState('');
+    const [geoStatus, setGeoStatus] = useState<PermissionStatusView>(getInitialPermissionStatus);
+    const [isRequestingGeo, setIsRequestingGeo] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+
+    const runPermissionFlow = async (): Promise<LoginContext> => {
+        setIsRequestingGeo(true);
+        setGeoStatus({
+            state: 'requesting',
+            title: 'Bước 1: Quyền vị trí - Đang yêu cầu',
+            detail: 'Đang yêu cầu quyền vị trí từ trình duyệt...',
+            tone: 'info'
+        });
+
+        const loginContext = await collectLoginContext();
+        setGeoStatus(mapPermissionStatus(loginContext.geoPermissionState || 'unknown'));
+        setIsRequestingGeo(false);
+
+        return loginContext;
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLoading || isRequestingGeo) return;
+
         setError('');
+        setGeoHint('');
 
         // Basic validation
         if (!formData.email || !formData.password) {
@@ -25,10 +263,21 @@ export default function LoginForm() {
             return;
         }
 
+        const loginContext = await runPermissionFlow();
+
+        if (loginContext.geoPermissionState === 'denied') {
+            setGeoHint('Bạn đã từ chối quyền vị trí. Vẫn tiếp tục đăng nhập, hệ thống sẽ ghi nhận trạng thái này.');
+            await waitForUiFrame();
+        } else if (loginContext.geoPermissionState === 'prompt') {
+            setGeoHint('Trình duyệt đang chờ bạn cho phép quyền vị trí. Nếu không cấp quyền, hệ thống vẫn đăng nhập bình thường và ghi nhận trạng thái quyền.');
+            await waitForUiFrame();
+        }
+
         const result = await login({
             email: formData.email,
             password: formData.password,
             rememberMe,
+            loginContext
         });
 
         if (result.success) {
@@ -51,6 +300,15 @@ export default function LoginForm() {
         }));
     };
 
+    const handleRetryPermission = async () => {
+        if (isLoading || isRequestingGeo) return;
+        setError('');
+        setGeoHint('');
+        await runPermissionFlow();
+    };
+
+    const submitLoading = isLoading || isRequestingGeo;
+
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
@@ -62,6 +320,29 @@ export default function LoginForm() {
                     {error}
                 </div>
             )}
+
+            {geoHint && (
+                <div className="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-xs">
+                    {geoHint}
+                </div>
+            )}
+
+            <div className={`rounded-xl border px-3 py-2.5 text-xs ${getStatusToneClass(geoStatus.tone)}`}>
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <div className="font-semibold">{geoStatus.title}</div>
+                        <div className="mt-1 opacity-90">{geoStatus.detail}</div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleRetryPermission}
+                        disabled={submitLoading}
+                        className="text-[11px] font-semibold px-2.5 py-1.5 rounded-md border border-current/30 hover:bg-white/40 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        Thử lại quyền vị trí
+                    </button>
+                </div>
+            </div>
 
             {/* Email Input */}
             <Input
@@ -132,7 +413,7 @@ export default function LoginForm() {
                 variant="primary"
                 size="lg"
                 className="w-full"
-                isLoading={isLoading}
+                isLoading={submitLoading}
             >
                 Đăng nhập
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -13,6 +13,13 @@ export interface TokenUsageTotals {
     totalTokens: number;
     promptTokens: number;
     completionTokens: number;
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
     requestCount: number;
     activeUsers: number;
 }
@@ -22,6 +29,13 @@ export interface TokenUsageTimelineItem {
     totalTokens: number;
     promptTokens: number;
     completionTokens: number;
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
     requestCount: number;
 }
 
@@ -30,6 +44,13 @@ export interface TokenUsageTopTool {
     totalTokens: number;
     promptTokens: number;
     completionTokens: number;
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
     requestCount: number;
 }
 
@@ -41,7 +62,38 @@ export interface TokenUsageTopUser {
     totalTokens: number;
     promptTokens: number;
     completionTokens: number;
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
     requestCount: number;
+}
+
+export interface TokenUsageTopFeature {
+    featureKey: string;
+    totalTokens: number;
+    promptTokens: number;
+    completionTokens: number;
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
+}
+
+export interface TokenUsageDiscrepancy {
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
 }
 
 export interface TokenUsagePagination {
@@ -56,6 +108,8 @@ export interface TokenUsageSummaryData {
     timeline: TokenUsageTimelineItem[];
     topTools: TokenUsageTopTool[];
     topUsers: TokenUsageTopUser[];
+    topFeatures: TokenUsageTopFeature[];
+    discrepancy: TokenUsageDiscrepancy;
 }
 
 export interface TokenUsageUsersParams extends TokenUsageQueryParams {
@@ -72,14 +126,38 @@ export interface TokenUsageUserRow {
     totalTokens: number;
     promptTokens: number;
     completionTokens: number;
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
     requestCount: number;
     activeTools?: string[];
     lastUsedAt?: string;
+    updatedAt?: string;
 }
 
 export interface TokenUsageUsersData {
     users: TokenUsageUserRow[];
     pagination: TokenUsagePagination;
+}
+
+export interface TokenUsageDebugRecentItem {
+    dateKey: string;
+    userId: string;
+    tool: string;
+    requestCount: number;
+    totalTokens: number;
+    lastRequestAt?: string | null;
+    updatedAt?: string | null;
+    model?: string;
+}
+
+export interface TokenUsageDebugRecentData {
+    limit: number;
+    items: TokenUsageDebugRecentItem[];
 }
 
 export const tokenUsageApi = {
@@ -90,6 +168,13 @@ export const tokenUsageApi = {
 
     async getTokenUsageUsers(params?: TokenUsageUsersParams): Promise<ApiResponse<TokenUsageUsersData>> {
         const response = await api.get<ApiResponse<TokenUsageUsersData>>('/admin/token-usage/users', { params });
+        return response.data;
+    },
+
+    async getTokenUsageDebugRecent(limit = 20): Promise<ApiResponse<TokenUsageDebugRecentData>> {
+        const response = await api.get<ApiResponse<TokenUsageDebugRecentData>>('/admin/token-usage/debug/recent', {
+            params: { limit }
+        });
         return response.data;
     }
 };

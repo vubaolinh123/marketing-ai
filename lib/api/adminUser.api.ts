@@ -1,4 +1,5 @@
 import api, { ApiResponse } from './api';
+import type { LoginBrowserGeo, LoginDeviceMeta, LoginGeoPermissionState } from '@/types';
 
 export interface AdminUser {
     id: string;
@@ -49,6 +50,40 @@ export interface UpdateAdminUserPayload {
     isActive?: boolean;
 }
 
+export interface AdminUserSession {
+    id?: string;
+    _id?: string;
+    sessionId?: string;
+    device?: string;
+    deviceName?: string;
+    userAgent?: string;
+    ip?: string;
+    ipAddress?: string;
+    location?: string | {
+        country?: string;
+        region?: string;
+        city?: string;
+        timezone?: string;
+        source?: string;
+    };
+    lastUsedAt?: string;
+    lastActiveAt?: string;
+    createdAt?: string;
+    current?: boolean;
+    isCurrent?: boolean;
+    revokedAt?: string | null;
+    isRevoked?: boolean;
+    geoPermissionState?: LoginGeoPermissionState;
+    browserGeo?: LoginBrowserGeo;
+    deviceMeta?: LoginDeviceMeta;
+}
+
+export interface AdminUserSessionsData {
+    activeSessions?: AdminUserSession[];
+    sessions?: AdminUserSession[];
+    loginHistory?: AdminUserSession[];
+}
+
 export const adminUserApi = {
     async listUsers(params?: AdminUsersQuery): Promise<ApiResponse<AdminUsersListData>> {
         const response = await api.get<ApiResponse<AdminUsersListData>>('/admin/users', { params });
@@ -72,6 +107,18 @@ export const adminUserApi = {
 
     async resetUserPassword(userId: string, newPassword: string): Promise<ApiResponse<null>> {
         const response = await api.patch<ApiResponse<null>>(`/admin/users/${userId}/password`, { newPassword });
+        return response.data;
+    },
+
+    async getUserSessions(userId: string): Promise<ApiResponse<AdminUserSessionsData>> {
+        const response = await api.get<ApiResponse<AdminUserSessionsData>>(`/admin/users/${userId}/sessions`);
+        return response.data;
+    },
+
+    async revokeUserSession(userId: string, sessionId: string): Promise<ApiResponse<{ sessionId?: string; revoked?: boolean } | null>> {
+        const response = await api.post<ApiResponse<{ sessionId?: string; revoked?: boolean } | null>>(
+            `/admin/users/${userId}/sessions/${sessionId}/revoke`
+        );
         return response.data;
     },
 
