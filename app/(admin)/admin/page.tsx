@@ -49,6 +49,19 @@ const tools = [
         ),
         color: 'from-red-500 to-pink-500',
     },
+    {
+        title: 'Token usage',
+        description: 'Theo dõi token Gemini theo người dùng và công cụ',
+        href: '/admin/token-usage',
+        requiresAdmin: true,
+        icon: (
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3v18h18" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 14l3-3 3 2 4-5" />
+            </svg>
+        ),
+        color: 'from-blue-500 to-indigo-600',
+    },
 ];
 
 const containerVariants = {
@@ -75,6 +88,7 @@ const itemVariants = {
 
 export default function AdminDashboard() {
     const { user } = useAuth();
+    const visibleTools = tools.filter((tool) => !tool.requiresAdmin || user?.role === 'admin');
 
     return (
         <motion.div
@@ -98,7 +112,7 @@ export default function AdminDashboard() {
                 variants={containerVariants}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
-                {tools.map((tool, index) => (
+                {visibleTools.map((tool) => (
                     <motion.div
                         key={tool.href}
                         variants={itemVariants}

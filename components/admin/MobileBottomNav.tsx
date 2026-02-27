@@ -84,6 +84,17 @@ const menuItems: MenuItem[] = [
             </svg>
         ),
     },
+    {
+        label: 'Tokens',
+        href: '/admin/token-usage',
+        requiresAdmin: true,
+        icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 14l3-3 3 2 4-5" />
+            </svg>
+        ),
+    },
 ];
 
 export default function MobileBottomNav() {
