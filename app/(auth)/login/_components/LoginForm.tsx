@@ -140,6 +140,36 @@ interface PermissionStatusView {
     tone: PermissionStatusTone;
 }
 
+function getSiteSettingsGuideText(): string {
+    return 'Nếu trình duyệt không hiện lại hộp thoại cấp quyền, hãy nhấn biểu tượng ổ khóa cạnh thanh địa chỉ → Quyền vị trí (Location) → Chọn "Cho phép", sau đó bấm "Thử lại quyền vị trí".';
+}
+
+function getPermissionHint(state: LoginGeoPermissionState, source: 'submit' | 'retry'): string {
+    if (state === 'granted') {
+        return source === 'retry'
+            ? 'Đã cập nhật quyền vị trí thành công.'
+            : '';
+    }
+
+    if (state === 'denied') {
+        return `Bạn đang từ chối quyền vị trí. ${getSiteSettingsGuideText()}`;
+    }
+
+    if (state === 'prompt') {
+        if (source === 'retry') {
+            return `Trình duyệt đang ở trạng thái chờ cấp quyền. Nếu chưa thấy popup, ${getSiteSettingsGuideText().toLowerCase()}`;
+        }
+
+        return 'Trình duyệt đang chờ bạn cho phép quyền vị trí. Nếu không cấp quyền, hệ thống vẫn đăng nhập bình thường và ghi nhận trạng thái quyền.';
+    }
+
+    if (state === 'error') {
+        return 'Không thể lấy vị trí lúc này. Hệ thống vẫn cho phép đăng nhập.';
+    }
+
+    return '';
+}
+
 function getInitialPermissionStatus(): PermissionStatusView {
     return {
         state: 'idle',
@@ -234,7 +264,7 @@ export default function LoginForm() {
     const [isRequestingGeo, setIsRequestingGeo] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
 
-    const runPermissionFlow = async (): Promise<LoginContext> => {
+    const runPermissionFlow = async (source: 'submit' | 'retry'): Promise<LoginContext> => {
         setIsRequestingGeo(true);
         setGeoStatus({
             state: 'requesting',
@@ -242,12 +272,19 @@ export default function LoginForm() {
             detail: 'Đang yêu cầu quyền vị trí từ trình duyệt...',
             tone: 'info'
         });
+        setGeoHint('Đang kiểm tra quyền vị trí...');
 
-        const loginContext = await collectLoginContext();
-        setGeoStatus(mapPermissionStatus(loginContext.geoPermissionState || 'unknown'));
-        setIsRequestingGeo(false);
+        try {
+            const loginContext = await collectLoginContext();
+            const resolvedState = loginContext.geoPermissionState || 'unknown';
 
-        return loginContext;
+            setGeoStatus(mapPermissionStatus(resolvedState));
+            setGeoHint(getPermissionHint(resolvedState, source));
+
+            return loginContext;
+        } finally {
+            setIsRequestingGeo(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -263,13 +300,9 @@ export default function LoginForm() {
             return;
         }
 
-        const loginContext = await runPermissionFlow();
+        const loginContext = await runPermissionFlow('submit');
 
-        if (loginContext.geoPermissionState === 'denied') {
-            setGeoHint('Bạn đã từ chối quyền vị trí. Vẫn tiếp tục đăng nhập, hệ thống sẽ ghi nhận trạng thái này.');
-            await waitForUiFrame();
-        } else if (loginContext.geoPermissionState === 'prompt') {
-            setGeoHint('Trình duyệt đang chờ bạn cho phép quyền vị trí. Nếu không cấp quyền, hệ thống vẫn đăng nhập bình thường và ghi nhận trạng thái quyền.');
+        if (loginContext.geoPermissionState === 'denied' || loginContext.geoPermissionState === 'prompt') {
             await waitForUiFrame();
         }
 
@@ -304,7 +337,7 @@ export default function LoginForm() {
         if (isLoading || isRequestingGeo) return;
         setError('');
         setGeoHint('');
-        await runPermissionFlow();
+        await runPermissionFlow('retry');
     };
 
     const submitLoading = isLoading || isRequestingGeo;

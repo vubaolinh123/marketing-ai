@@ -17,7 +17,6 @@ import { showError } from '@/lib/toast';
 const Pagination = dynamic(() => import('../article/list/_components/Pagination'), { ssr: false });
 
 const USERS_PAGE_SIZE = 10;
-const TOKEN_DEBUG_RECENT_LIMIT = 12;
 
 const EMPTY_SUMMARY: TokenUsageSummaryData = {
     totals: {
@@ -103,13 +102,16 @@ const itemVariants = {
 
 function getDefaultDateRange() {
     const toDateInput = (value: Date) => {
-        const localDate = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
-        return localDate.toISOString().slice(0, 10);
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
-    const to = new Date();
-    const from = new Date();
-    from.setDate(from.getDate() - 29);
+    const now = new Date();
+    const to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const from = new Date(to);
+    from.setDate(to.getDate() - 29);
 
     return {
         fromDate: toDateInput(from),
@@ -158,7 +160,7 @@ export default function AdminTokenUsagePage() {
 
     const [fromDate, setFromDate] = useState(defaults.fromDate);
     const [toDate, setToDate] = useState(defaults.toDate);
-    const [groupBy, setGroupBy] = useState<TokenUsageGroupBy>('day');
+    const [groupBy, setGroupBy] = useState<TokenUsageGroupBy>('month');
     const [selectedUserId, setSelectedUserId] = useState('');
 
     const [summary, setSummary] = useState<TokenUsageSummaryData>(EMPTY_SUMMARY);
@@ -166,16 +168,6 @@ export default function AdminTokenUsagePage() {
     const [isSummaryLoading, setIsSummaryLoading] = useState(true);
     const [isUsersLoading, setIsUsersLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [debugRecent, setDebugRecent] = useState<Array<{
-        dateKey: string;
-        userId: string;
-        tool: string;
-        requestCount: number;
-        totalTokens: number;
-        lastRequestAt?: string | null;
-        updatedAt?: string | null;
-        model?: string;
-    }>>([]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -250,16 +242,6 @@ export default function AdminTokenUsagePage() {
         }
     }, [currentPage, hasInvalidRange, requestParams]);
 
-    const fetchRecentDebug = useCallback(async () => {
-        try {
-            const response = await tokenUsageApi.getTokenUsageDebugRecent(TOKEN_DEBUG_RECENT_LIMIT);
-            if (!response.success || !response.data) return;
-            setDebugRecent(response.data.items || []);
-        } catch {
-            // silent in UI, debug-only panel
-        }
-    }, []);
-
     useEffect(() => {
         setCurrentPage(1);
     }, [fromDate, toDate, groupBy, selectedUserId]);
@@ -272,10 +254,6 @@ export default function AdminTokenUsagePage() {
         fetchUsers();
     }, [fetchUsers]);
 
-    useEffect(() => {
-        fetchRecentDebug();
-    }, [fetchRecentDebug]);
-
     const handleRefresh = async () => {
         if (hasInvalidRange) {
             showError('Khoảng ngày không hợp lệ. Vui lòng kiểm tra lại.');
@@ -284,10 +262,18 @@ export default function AdminTokenUsagePage() {
 
         try {
             setIsRefreshing(true);
-            await Promise.all([fetchSummary(), fetchUsers(), fetchRecentDebug()]);
+            await Promise.all([fetchSummary(), fetchUsers()]);
         } finally {
             setIsRefreshing(false);
         }
+    };
+
+    const handleResetFilters = () => {
+        const nextDefaults = getDefaultDateRange();
+        setFromDate(nextDefaults.fromDate);
+        setToDate(nextDefaults.toDate);
+        setGroupBy('month');
+        setSelectedUserId('');
     };
 
     const toolDistribution = useMemo(() => {
@@ -426,12 +412,7 @@ export default function AdminTokenUsagePage() {
                         <Button
                             variant="secondary"
                             className="rounded-xl w-full"
-                            onClick={() => {
-                                setFromDate(defaults.fromDate);
-                                setToDate(defaults.toDate);
-                                setGroupBy('day');
-                                setSelectedUserId('');
-                            }}
+                            onClick={handleResetFilters}
                         >
                             Đặt lại bộ lọc
                         </Button>
@@ -769,46 +750,6 @@ export default function AdminTokenUsagePage() {
                                     <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(item.requestCount)}</td>
                                     <td className="px-4 py-3 text-sm text-gray-600">{formatDateTime(item.lastUsedAt)}</td>
                                 </motion.tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-4 py-4 border-b border-gray-100">
-                    <h2 className="text-base font-semibold text-gray-900">Debug token gần nhất</h2>
-                    <p className="text-xs text-gray-500 mt-1">Dùng để đối chiếu khi nghi ngờ token không ghi vào thống kê.</p>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[920px]">
-                        <thead>
-                            <tr className="bg-[#F7FAFF] text-left text-xs uppercase tracking-wide text-gray-600">
-                                <th className="px-4 py-3 font-semibold">Ngày</th>
-                                <th className="px-4 py-3 font-semibold">Tool</th>
-                                <th className="px-4 py-3 font-semibold">Model</th>
-                                <th className="px-4 py-3 font-semibold">Requests</th>
-                                <th className="px-4 py-3 font-semibold">Total</th>
-                                <th className="px-4 py-3 font-semibold">Last Request</th>
-                                <th className="px-4 py-3 font-semibold">Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {debugRecent.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="px-4 py-6 text-sm text-gray-500 text-center">Chưa có bản ghi debug gần đây.</td>
-                                </tr>
-                            )}
-                            {debugRecent.map((row, idx) => (
-                                <tr key={`${row.userId}-${row.dateKey}-${idx}`} className="border-t border-gray-100">
-                                    <td className="px-4 py-3 text-sm text-gray-700">{row.dateKey}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700">{row.tool || '--'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700">{row.model || '--'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700">{formatNumber(row.requestCount)}</td>
-                                    <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatNumber(row.totalTokens)}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(row.lastRequestAt || undefined)}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(row.updatedAt || undefined)}</td>
-                                </tr>
                             ))}
                         </tbody>
                     </table>

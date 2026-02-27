@@ -33,6 +33,10 @@ function isRevokedSession(session: AdminUserSession): boolean {
     return !!(session.isRevoked || session.revokedAt);
 }
 
+function isVisibleActiveSession(session: AdminUserSession): boolean {
+    return !isRevokedSession(session) && session.isActive !== false;
+}
+
 function getDeviceLabel(session: AdminUserSession): string {
     return session.deviceName || session.device || 'Thiết bị chưa xác định';
 }
@@ -123,7 +127,6 @@ function getGeoPermissionLabel(session: AdminUserSession): string {
     if (state === 'denied') return 'Đã từ chối';
     if (state === 'prompt') return 'Đang chờ xác nhận';
     if (state === 'error') return 'Lỗi khi lấy vị trí';
-    if (state === 'unavailable') return 'Không khả dụng';
     if (state === 'unsupported') return 'Trình duyệt không hỗ trợ';
 
     return 'Chưa rõ';
@@ -147,8 +150,9 @@ function getDeviceMetaLabel(session: AdminUserSession): string {
     const platform = meta.platform || UNKNOWN_TEXT;
     const language = meta.language || UNKNOWN_TEXT;
     const timezone = meta.timezone || UNKNOWN_TEXT;
-    const screenWidth = typeof meta.screen?.width === 'number' ? meta.screen.width : UNKNOWN_TEXT;
-    const screenHeight = typeof meta.screen?.height === 'number' ? meta.screen.height : UNKNOWN_TEXT;
+    const screen = typeof meta.screen === 'object' && meta.screen !== null ? meta.screen : null;
+    const screenWidth = typeof screen?.width === 'number' ? screen.width : UNKNOWN_TEXT;
+    const screenHeight = typeof screen?.height === 'number' ? screen.height : UNKNOWN_TEXT;
 
     return `${platform} · ${language} · ${timezone} · ${screenWidth}x${screenHeight}`;
 }
@@ -214,14 +218,15 @@ export default function UserSessionsModal({ isOpen, targetUser, onClose }: UserS
     const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
 
     const applySessionPayload = useCallback((payload?: AdminUserSessionsData | null) => {
-        const activeSessions = Array.isArray(payload?.activeSessions)
+        const activeSessionsRaw = Array.isArray(payload?.activeSessions)
             ? payload.activeSessions
             : Array.isArray(payload?.sessions)
                 ? payload.sessions
                 : [];
+        const activeSessions = activeSessionsRaw.filter(isVisibleActiveSession);
 
         const historySource = Array.isArray(payload?.loginHistory)
-            ? payload.loginHistory
+            ? payload.loginHistory.filter(isVisibleActiveSession)
             : activeSessions;
 
         setSessions(sortByLastUsedDesc(activeSessions));
@@ -285,15 +290,10 @@ export default function UserSessionsModal({ isOpen, targetUser, onClose }: UserS
                 throw new Error(response.message || 'Không thể thu hồi phiên đăng nhập');
             }
 
-            const revokedAt = new Date().toISOString();
-            const markRevoked = (items: AdminUserSession[]) => items.map((item) => (
-                getSessionId(item) === sessionId
-                    ? { ...item, isRevoked: true, revokedAt: item.revokedAt || revokedAt }
-                    : item
-            ));
+            const removeSession = (items: AdminUserSession[]) => items.filter((item) => getSessionId(item) !== sessionId);
 
-            setSessions((prev) => markRevoked(prev));
-            setLoginHistory((prev) => markRevoked(prev));
+            setSessions((prev) => removeSession(prev));
+            setLoginHistory((prev) => removeSession(prev));
             showSuccess('Đã thu hồi phiên đăng nhập');
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Không thể thu hồi phiên đăng nhập';

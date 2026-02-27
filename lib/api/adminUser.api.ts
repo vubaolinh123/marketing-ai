@@ -73,6 +73,7 @@ export interface AdminUserSession {
     isCurrent?: boolean;
     revokedAt?: string | null;
     isRevoked?: boolean;
+    isActive?: boolean;
     geoPermissionState?: LoginGeoPermissionState;
     browserGeo?: LoginBrowserGeo;
     deviceMeta?: LoginDeviceMeta;
