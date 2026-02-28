@@ -85,6 +85,8 @@ export type {
     TokenUsageQueryParams,
     TokenUsageTotals,
     TokenUsageTimelineItem,
+    TokenUsageTimelineByToolItem,
+    TokenUsageChartMeta,
     TokenUsageTopTool,
     TokenUsageTopFeature,
     TokenUsageTopUser,

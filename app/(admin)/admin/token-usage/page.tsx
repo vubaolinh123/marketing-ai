@@ -3,12 +3,28 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Legend,
+    Line,
+    LineChart,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis
+} from 'recharts';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import {
     tokenUsageApi,
     type TokenUsageGroupBy,
     type TokenUsageSummaryData,
+    type TokenUsageTimelineItem,
     type TokenUsageTopTool,
     type TokenUsageUserRow
 } from '@/lib/api';
@@ -17,6 +33,17 @@ import { showError } from '@/lib/toast';
 const Pagination = dynamic(() => import('../article/list/_components/Pagination'), { ssr: false });
 
 const USERS_PAGE_SIZE = 10;
+const TIMELINE_CHART_COLORS = ['#3B82F6', '#8B5CF6', '#14B8A6', '#F97316', '#0EA5E9', '#6366F1', '#10B981', '#F59E0B'];
+
+type TimelineMetricKey = 'totalTokens' | 'promptTokens' | 'completionTokens' | 'supplementalTokens' | 'requestCount';
+type TimelineChartType = 'bar' | 'pie' | 'line';
+type TimelineDisplayMode = 'overall' | 'tool';
+
+const groupByLabels: Record<TokenUsageGroupBy, string> = {
+    day: 'Ngày',
+    week: 'Tuần',
+    month: 'Tháng'
+};
 
 const EMPTY_SUMMARY: TokenUsageSummaryData = {
     totals: {
@@ -34,6 +61,7 @@ const EMPTY_SUMMARY: TokenUsageSummaryData = {
         activeUsers: 0
     },
     timeline: [],
+    timelineByTool: [],
     topTools: [],
     topUsers: [],
     topFeatures: [],
@@ -45,8 +73,30 @@ const EMPTY_SUMMARY: TokenUsageSummaryData = {
         otherKnownTokens: 0,
         explainedSupplementalTokens: 0,
         unexplainedTokens: 0
+    },
+    chartMeta: {
+        groupBy: 'day',
+        bucketCount: 0,
+        from: '',
+        to: ''
     }
 };
+
+const timelineMetricOptions: { key: TimelineMetricKey; label: string; shortLabel: string }[] = [
+    { key: 'totalTokens', label: 'Tổng token', shortLabel: 'Tổng' },
+    { key: 'promptTokens', label: 'Prompt token', shortLabel: 'Prompt' },
+    { key: 'completionTokens', label: 'Completion token', shortLabel: 'Completion' },
+    { key: 'supplementalTokens', label: 'Supplemental token', shortLabel: 'Supplemental' },
+    { key: 'requestCount', label: 'Số request', shortLabel: 'Request' }
+];
+
+const toolSeriesConfig = [
+    { id: 'article', label: 'Bài viết', color: '#3B82F6' },
+    { id: 'image', label: 'Hình ảnh', color: '#8B5CF6' },
+    { id: 'video', label: 'Video', color: '#F97316' },
+    { id: 'marketing', label: 'Marketing', color: '#14B8A6' },
+    { id: 'unknown', label: 'Khác', color: '#64748B' }
+] as const;
 
 const supplementalBuckets = [
     { key: 'thoughtTokens', label: 'Suy luận nội bộ' },
@@ -153,6 +203,36 @@ function getToolBucketKey(tool: TokenUsageTopTool) {
     return bucket?.id;
 }
 
+function normalizeToolKey(value?: string) {
+    return (value || 'unknown').toLowerCase().replaceAll('_', '-');
+}
+
+function resolveToolDisplay(tool: string, fallbackColorIndex = 0) {
+    const normalizedTool = normalizeToolKey(tool);
+    const matchedBucket = toolBuckets.find((bucket) => bucket.matches.some((keyword) => normalizedTool.includes(keyword)));
+    const presetByBucket = toolSeriesConfig.find((item) => item.id === matchedBucket?.id);
+    const presetDirect = toolSeriesConfig.find((item) => item.id === normalizedTool);
+    const preset = presetDirect || presetByBucket;
+
+    if (preset) {
+        return {
+            key: normalizedTool,
+            label: preset.label,
+            color: preset.color
+        };
+    }
+
+    return {
+        key: normalizedTool || 'unknown',
+        label: tool || 'Khác',
+        color: TIMELINE_CHART_COLORS[fallbackColorIndex % TIMELINE_CHART_COLORS.length]
+    };
+}
+
+function getTimelineMetricValue(item: TokenUsageTimelineItem, metric: TimelineMetricKey) {
+    return Number(item[metric] || 0);
+}
+
 export default function AdminTokenUsagePage() {
     const { user, isLoading: isAuthLoading } = useAuth();
 
@@ -168,6 +248,9 @@ export default function AdminTokenUsagePage() {
     const [isSummaryLoading, setIsSummaryLoading] = useState(true);
     const [isUsersLoading, setIsUsersLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [selectedTimelineMetric, setSelectedTimelineMetric] = useState<TimelineMetricKey>('totalTokens');
+    const [timelineChartType, setTimelineChartType] = useState<TimelineChartType>('bar');
+    const [timelineDisplayMode, setTimelineDisplayMode] = useState<TimelineDisplayMode>('overall');
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -198,12 +281,17 @@ export default function AdminTokenUsagePage() {
                     ...(response.data.totals || {})
                 },
                 timeline: response.data.timeline || [],
+                timelineByTool: response.data.timelineByTool || [],
                 topTools: response.data.topTools || [],
                 topUsers: response.data.topUsers || [],
                 topFeatures: response.data.topFeatures || [],
                 discrepancy: {
                     ...EMPTY_SUMMARY.discrepancy,
                     ...(response.data.discrepancy || {})
+                },
+                chartMeta: {
+                    ...EMPTY_SUMMARY.chartMeta,
+                    ...(response.data.chartMeta || {})
                 }
             });
         } catch (error: unknown) {
@@ -254,6 +342,12 @@ export default function AdminTokenUsagePage() {
         fetchUsers();
     }, [fetchUsers]);
 
+    useEffect(() => {
+        if (!summary.timelineByTool.length && timelineDisplayMode === 'tool') {
+            setTimelineDisplayMode('overall');
+        }
+    }, [summary.timelineByTool.length, timelineDisplayMode]);
+
     const handleRefresh = async () => {
         if (hasInvalidRange) {
             showError('Khoảng ngày không hợp lệ. Vui lòng kiểm tra lại.');
@@ -295,10 +389,6 @@ export default function AdminTokenUsagePage() {
         return distribution;
     }, [summary.topTools]);
 
-    const maxTimelineTokens = useMemo(() => {
-        return Math.max(...summary.timeline.map((item) => item.totalTokens || 0), 1);
-    }, [summary.timeline]);
-
     const maxToolTokens = useMemo(() => {
         return Math.max(...toolDistribution.map((item) => item.totalTokens || 0), 1);
     }, [toolDistribution]);
@@ -310,6 +400,95 @@ export default function AdminTokenUsagePage() {
     const sortedTopFeatures = useMemo(() => {
         return [...summary.topFeatures].sort((a, b) => (b.totalTokens || 0) - (a.totalTokens || 0));
     }, [summary.topFeatures]);
+
+    const selectedTimelineMetricOption = useMemo(
+        () => timelineMetricOptions.find((item) => item.key === selectedTimelineMetric) || timelineMetricOptions[0],
+        [selectedTimelineMetric]
+    );
+
+    const timelineBuckets = useMemo(() => {
+        if (summary.timeline.length > 0) {
+            return summary.timeline.map((item) => item.bucket);
+        }
+        return Array.from(new Set(summary.timelineByTool.map((item) => item.bucket))).sort((a, b) => a.localeCompare(b));
+    }, [summary.timeline, summary.timelineByTool]);
+
+    const timelineOverallData = useMemo(() => {
+        const timelineMap = new Map(summary.timeline.map((item) => [item.bucket, item]));
+
+        return timelineBuckets.map((bucket) => {
+            const item = timelineMap.get(bucket);
+            return {
+                bucket,
+                value: item ? getTimelineMetricValue(item, selectedTimelineMetric) : 0
+            };
+        });
+    }, [selectedTimelineMetric, summary.timeline, timelineBuckets]);
+
+    const timelineTools = useMemo(() => {
+        const uniqueTools = Array.from(new Set(summary.timelineByTool.map((item) => normalizeToolKey(item.tool))));
+        const configuredOrder = toolSeriesConfig.map((item) => item.id);
+
+        uniqueTools.sort((a, b) => {
+            const indexA = configuredOrder.indexOf(a as (typeof toolSeriesConfig)[number]['id']);
+            const indexB = configuredOrder.indexOf(b as (typeof toolSeriesConfig)[number]['id']);
+            const rankA = indexA >= 0 ? indexA : 999;
+            const rankB = indexB >= 0 ? indexB : 999;
+            if (rankA !== rankB) return rankA - rankB;
+            return a.localeCompare(b);
+        });
+
+        return uniqueTools.map((tool, index) => resolveToolDisplay(tool, index));
+    }, [summary.timelineByTool]);
+
+    const timelineByToolData = useMemo(() => {
+        const seeded = timelineBuckets.map((bucket) => ({ bucket })) as Array<Record<string, number | string>>;
+        const bucketMap = new Map(seeded.map((item) => [String(item.bucket), item]));
+
+        summary.timelineByTool.forEach((item) => {
+            const bucketData = bucketMap.get(item.bucket);
+            if (!bucketData) return;
+            const toolKey = normalizeToolKey(item.tool);
+            bucketData[toolKey] = Number(item[selectedTimelineMetric] || 0);
+        });
+
+        timelineTools.forEach((tool) => {
+            seeded.forEach((bucketRow) => {
+                if (typeof bucketRow[tool.key] !== 'number') {
+                    bucketRow[tool.key] = 0;
+                }
+            });
+        });
+
+        return seeded;
+    }, [selectedTimelineMetric, summary.timelineByTool, timelineBuckets, timelineTools]);
+
+    const timelinePieData = useMemo(() => {
+        if (timelineDisplayMode === 'tool' && timelineTools.length > 0) {
+            const totalsByTool = new Map<string, number>();
+
+            summary.timelineByTool.forEach((item) => {
+                const key = normalizeToolKey(item.tool);
+                totalsByTool.set(key, (totalsByTool.get(key) || 0) + Number(item[selectedTimelineMetric] || 0));
+            });
+
+            return timelineTools.map((tool) => ({
+                name: tool.label,
+                value: totalsByTool.get(tool.key) || 0,
+                color: tool.color
+            }));
+        }
+
+        return timelineOverallData.map((item, index) => ({
+            name: item.bucket,
+            value: Number(item.value || 0),
+            color: TIMELINE_CHART_COLORS[index % TIMELINE_CHART_COLORS.length]
+        }));
+    }, [selectedTimelineMetric, summary.timelineByTool, timelineDisplayMode, timelineOverallData, timelineTools]);
+
+    const timelineChartData = timelineDisplayMode === 'tool' ? timelineByToolData : timelineOverallData;
+    const timelineHasData = timelineBuckets.length > 0;
+    const timelineChartMinWidth = Math.max(680, timelineBuckets.length * 72);
 
     if (isAuthLoading) {
         return (
@@ -526,34 +705,141 @@ export default function AdminTokenUsagePage() {
 
             <motion.div variants={itemVariants} className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
                 <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">Diễn biến token theo thời gian</h2>
-                        <span className="text-sm text-gray-500">{groupBy.toUpperCase()}</span>
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+                        <div>
+                            <h2 className="text-lg font-semibold text-gray-900">Diễn biến token theo thời gian</h2>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Nhóm theo {groupByLabels[groupBy]} • {summary.chartMeta.bucketCount || timelineBuckets.length} bucket
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <select
+                                value={selectedTimelineMetric}
+                                onChange={(e) => setSelectedTimelineMetric(e.target.value as TimelineMetricKey)}
+                                className="h-9 rounded-lg border border-gray-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4A90D9]/30"
+                            >
+                                {timelineMetricOptions.map((metric) => (
+                                    <option key={metric.key} value={metric.key}>{metric.label}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={timelineDisplayMode}
+                                onChange={(e) => setTimelineDisplayMode(e.target.value as TimelineDisplayMode)}
+                                disabled={!summary.timelineByTool.length}
+                                className="h-9 rounded-lg border border-gray-200 px-3 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4A90D9]/30"
+                            >
+                                <option value="overall">Tổng theo bucket</option>
+                                <option value="tool">So sánh theo tool</option>
+                            </select>
+
+                            <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+                                {([
+                                    ['bar', 'Cột'],
+                                    ['pie', 'Tròn'],
+                                    ['line', 'Đường']
+                                ] as const).map(([type, label]) => (
+                                    <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => setTimelineChartType(type)}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${
+                                            timelineChartType === type
+                                                ? 'bg-[#E8F1FF] text-[#1D4ED8]'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     {isSummaryLoading ? (
                         <div className="h-72 rounded-2xl border border-dashed border-gray-200 bg-[#F7FAFF] animate-pulse" />
-                    ) : summary.timeline.length === 0 ? (
+                    ) : !timelineHasData ? (
                         <div className="h-72 rounded-2xl border border-dashed border-gray-200 bg-[#F8FBFF] flex items-center justify-center text-gray-500">
                             Không có dữ liệu timeline trong khoảng thời gian này.
                         </div>
                     ) : (
-                        <div className="h-72 overflow-x-auto">
-                            <div className="h-full min-w-[700px] flex items-end gap-2 pb-6">
-                                {summary.timeline.map((item) => {
-                                    const heightPercent = ((item.totalTokens || 0) / maxTimelineTokens) * 100;
-
-                                    return (
-                                        <div key={item.bucket} className="flex-1 min-w-[44px] flex flex-col items-center justify-end gap-2">
-                                            <div
-                                                title={`${item.bucket}: ${formatNumber(item.totalTokens)} tokens`}
-                                                className="w-full rounded-t-lg bg-gradient-to-t from-[#1D4ED8] to-[#60A5FA]"
-                                                style={{ height: `${Math.max(8, heightPercent * 2)}px` }}
+                        <div className="h-[320px] overflow-x-auto">
+                            <div style={{ minWidth: timelineChartType === 'pie' ? undefined : `${timelineChartMinWidth}px` }} className="h-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    {timelineChartType === 'pie' ? (
+                                        <PieChart>
+                                            <Tooltip
+                                                formatter={(value: number | string | undefined) => [formatNumber(Number(value || 0)), selectedTimelineMetricOption.label] as [string, string]}
                                             />
-                                            <span className="text-[11px] text-gray-500 text-center leading-tight">{item.bucket}</span>
-                                        </div>
-                                    );
-                                })}
+                                            <Legend />
+                                            <Pie
+                                                data={timelinePieData}
+                                                dataKey="value"
+                                                nameKey="name"
+                                                innerRadius={60}
+                                                outerRadius={110}
+                                                paddingAngle={2}
+                                                label={(entry) => `${entry.name}: ${formatShortNumber(Number(entry.value || 0))}`}
+                                            >
+                                                {timelinePieData.map((entry) => (
+                                                    <Cell key={entry.name} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                        </PieChart>
+                                    ) : timelineChartType === 'line' ? (
+                                        <LineChart data={timelineChartData} margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                            <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={(value) => formatShortNumber(Number(value))} />
+                                            <Tooltip formatter={(value: number | string | undefined) => [formatNumber(Number(value || 0)), selectedTimelineMetricOption.shortLabel] as [string, string]} />
+                                            <Legend />
+                                            {timelineDisplayMode === 'tool' ? (
+                                                timelineTools.map((tool) => (
+                                                    <Line
+                                                        key={tool.key}
+                                                        type="monotone"
+                                                        dataKey={tool.key}
+                                                        name={tool.label}
+                                                        stroke={tool.color}
+                                                        strokeWidth={2}
+                                                        dot={false}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="value"
+                                                    name={selectedTimelineMetricOption.shortLabel}
+                                                    stroke="#2563EB"
+                                                    strokeWidth={2.5}
+                                                    dot={{ r: 3 }}
+                                                />
+                                            )}
+                                        </LineChart>
+                                    ) : (
+                                        <BarChart data={timelineChartData} margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                            <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: '#6B7280' }} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickFormatter={(value) => formatShortNumber(Number(value))} />
+                                            <Tooltip formatter={(value: number | string | undefined) => [formatNumber(Number(value || 0)), selectedTimelineMetricOption.shortLabel] as [string, string]} />
+                                            <Legend />
+                                            {timelineDisplayMode === 'tool' ? (
+                                                timelineTools.map((tool) => (
+                                                    <Bar
+                                                        key={tool.key}
+                                                        dataKey={tool.key}
+                                                        name={tool.label}
+                                                        fill={tool.color}
+                                                        radius={[4, 4, 0, 0]}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <Bar dataKey="value" name={selectedTimelineMetricOption.shortLabel} fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                                            )}
+                                        </BarChart>
+                                    )}
+                                </ResponsiveContainer>
                             </div>
                         </div>
                     )}

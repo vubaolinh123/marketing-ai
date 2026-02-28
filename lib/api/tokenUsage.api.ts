@@ -39,6 +39,29 @@ export interface TokenUsageTimelineItem {
     requestCount: number;
 }
 
+export interface TokenUsageTimelineByToolItem {
+    bucket: string;
+    tool: string;
+    totalTokens: number;
+    promptTokens: number;
+    completionTokens: number;
+    supplementalTokens: number;
+    thoughtTokens: number;
+    cachedTokens: number;
+    toolUseTokens: number;
+    otherKnownTokens: number;
+    explainedSupplementalTokens: number;
+    unexplainedTokens: number;
+    requestCount: number;
+}
+
+export interface TokenUsageChartMeta {
+    groupBy: TokenUsageGroupBy;
+    bucketCount: number;
+    from: string;
+    to: string;
+}
+
 export interface TokenUsageTopTool {
     tool: string;
     totalTokens: number;
@@ -106,10 +129,12 @@ export interface TokenUsagePagination {
 export interface TokenUsageSummaryData {
     totals: TokenUsageTotals;
     timeline: TokenUsageTimelineItem[];
+    timelineByTool: TokenUsageTimelineByToolItem[];
     topTools: TokenUsageTopTool[];
     topUsers: TokenUsageTopUser[];
     topFeatures: TokenUsageTopFeature[];
     discrepancy: TokenUsageDiscrepancy;
+    chartMeta: TokenUsageChartMeta;
 }
 
 export interface TokenUsageUsersParams extends TokenUsageQueryParams {
