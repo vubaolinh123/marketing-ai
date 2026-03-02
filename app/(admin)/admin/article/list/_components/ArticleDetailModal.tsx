@@ -120,10 +120,10 @@ export default function ArticleDetailModal({
                 const response = await settingsApi.get();
                 const facebook = response.data?.facebook;
                 const hasToken = Boolean(facebook?.facebookToken?.trim());
-                const hasPage = Boolean(facebook?.pageId?.trim());
+                const hasPage = Boolean(facebook?.facebookPageId?.trim());
 
                 setIsFacebookReady(hasToken && hasPage);
-                setFacebookPageName(facebook?.pageName || '');
+                setFacebookPageName(facebook?.facebookPageName || '');
             } catch {
                 setIsFacebookReady(false);
                 setFacebookPageName('');

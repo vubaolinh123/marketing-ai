@@ -15,9 +15,9 @@ interface FacebookSettingsSectionProps {
 interface VerifyPreview {
     facebookToken: string;
     isValid: boolean;
-    pageId?: string;
-    pageName?: string;
-    tokenExpiresAt?: string;
+    facebookPageId?: string;
+    facebookPageName?: string;
+    facebookTokenExpiresAt?: string;
 }
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
@@ -86,9 +86,9 @@ export default function FacebookSettingsSection({ data, onChange }: FacebookSett
             setVerifyPreview({
                 facebookToken: token,
                 isValid,
-                pageId: result.pageId || '',
-                pageName: result.pageName || '',
-                tokenExpiresAt: result.tokenExpiresAt || result.expiresAt || '',
+                facebookPageId: result.pageId || '',
+                facebookPageName: result.pageName || '',
+                facebookTokenExpiresAt: result.tokenExpiresAt || result.expiresAt || '',
             });
             setIsConfirmOpen(true);
         } catch (error) {
@@ -104,9 +104,9 @@ export default function FacebookSettingsSection({ data, onChange }: FacebookSett
         onChange({
             ...data,
             facebookToken: verifyPreview.facebookToken,
-            pageId: verifyPreview.pageId || '',
-            pageName: verifyPreview.pageName || '',
-            tokenExpiresAt: verifyPreview.tokenExpiresAt || '',
+            facebookPageId: verifyPreview.facebookPageId || '',
+            facebookPageName: verifyPreview.facebookPageName || '',
+            facebookTokenExpiresAt: verifyPreview.facebookTokenExpiresAt || '',
         });
 
         setDraftToken(verifyPreview.facebookToken);
@@ -189,11 +189,11 @@ export default function FacebookSettingsSection({ data, onChange }: FacebookSett
                             </p>
                         )}
 
-                        {(data.pageName || data.pageId || data.tokenExpiresAt) && (
+                        {(data.facebookPageName || data.facebookPageId || data.facebookTokenExpiresAt) && (
                             <div className="mt-3 p-3 rounded-xl border border-gray-200 bg-gray-50 space-y-1 text-sm text-gray-700">
-                                {data.pageName && <p><span className="font-medium">Fanpage:</span> {data.pageName}</p>}
-                                {data.pageId && <p><span className="font-medium">Page ID:</span> {data.pageId}</p>}
-                                {data.tokenExpiresAt && <p><span className="font-medium">Hết hạn:</span> {formatExpiry(data.tokenExpiresAt)}</p>}
+                                {data.facebookPageName && <p><span className="font-medium">Fanpage:</span> {data.facebookPageName}</p>}
+                                {data.facebookPageId && <p><span className="font-medium">Page ID:</span> {data.facebookPageId}</p>}
+                                {data.facebookTokenExpiresAt && <p><span className="font-medium">Hết hạn:</span> {formatExpiry(data.facebookTokenExpiresAt)}</p>}
                             </div>
                         )}
                     </div>
@@ -244,9 +244,9 @@ export default function FacebookSettingsSection({ data, onChange }: FacebookSett
                                             {verifyPreview.isValid ? 'Hợp lệ' : 'Không hợp lệ'}
                                         </span>
                                     </p>
-                                    <p><span className="font-medium">Tên trang:</span> {verifyPreview.pageName || 'Không có thông tin'}</p>
-                                    <p><span className="font-medium">Page ID:</span> {verifyPreview.pageId || 'Không có thông tin'}</p>
-                                    <p><span className="font-medium">Hết hạn:</span> {formatExpiry(verifyPreview.tokenExpiresAt)}</p>
+                                    <p><span className="font-medium">Tên trang:</span> {verifyPreview.facebookPageName || 'Không có thông tin'}</p>
+                                    <p><span className="font-medium">Page ID:</span> {verifyPreview.facebookPageId || 'Không có thông tin'}</p>
+                                    <p><span className="font-medium">Hết hạn:</span> {formatExpiry(verifyPreview.facebookTokenExpiresAt)}</p>
                                 </div>
 
                                 {!verifyPreview.isValid && (

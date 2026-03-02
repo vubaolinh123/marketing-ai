@@ -43,6 +43,10 @@ export interface ProductSettings {
 
 export interface FacebookSettings {
     facebookToken: string;
+    facebookPageId?: string;
+    facebookPageName?: string;
+    facebookTokenExpiresAt?: string;
+    // Legacy aliases (backward compatibility)
     pageId?: string;
     pageName?: string;
     tokenExpiresAt?: string;
