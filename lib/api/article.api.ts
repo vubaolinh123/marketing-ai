@@ -55,6 +55,10 @@ export interface FacebookPostResult {
     [key: string]: unknown;
 }
 
+export interface PostArticleToFacebookPayload {
+    selectedImageUrls?: string[];
+}
+
 /**
  * Generate article with AI (preview only, not saved)
  */
@@ -129,7 +133,10 @@ export async function saveArticle(data: {
 /**
  * Publish article to configured Facebook page
  */
-export async function postArticleToFacebook(articleId: string): Promise<FacebookPostResult> {
-    const response = await api.post(`/articles/${articleId}/post-facebook`);
+export async function postArticleToFacebook(
+    articleId: string,
+    payload?: PostArticleToFacebookPayload
+): Promise<FacebookPostResult> {
+    const response = await api.post(`/articles/${articleId}/post-facebook`, payload);
     return response.data.data;
 }
