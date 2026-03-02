@@ -45,6 +45,9 @@ interface BrandData {
     };
     facebook: {
         facebookToken: string;
+        pageId?: string;
+        pageName?: string;
+        tokenExpiresAt?: string;
     };
     aiModels: {
         textModel: string;
@@ -195,6 +198,9 @@ const defaultData: BrandData = {
     },
     facebook: {
         facebookToken: '',
+        pageId: '',
+        pageName: '',
+        tokenExpiresAt: '',
     },
     aiModels: {
         textModel: 'gemini-2.5-flash',
@@ -314,7 +320,10 @@ export default function BrandSettingsPage() {
                             suitableFor: settings.product?.suitableFor || []
                         },
                         facebook: {
-                            facebookToken: settings.facebook?.facebookToken || ''
+                            facebookToken: settings.facebook?.facebookToken || '',
+                            pageId: settings.facebook?.pageId || '',
+                            pageName: settings.facebook?.pageName || '',
+                            tokenExpiresAt: settings.facebook?.tokenExpiresAt || ''
                         },
                         aiModels: {
                             ...sanitizeAiModels(settings.aiModels, availableModels)

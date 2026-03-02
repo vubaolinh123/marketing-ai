@@ -4,13 +4,24 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { generateArticle, getImageUrl, updateArticle, type Article, type GeneratedArticle } from '@/lib/api';
+import { generateArticle, getImageUrl, postArticleToFacebook, settingsApi, updateArticle, type Article, type GeneratedArticle } from '@/lib/api';
 import toast from '@/lib/toast';
 
 type DetailMode = 'view' | 'edit' | 'regenerate';
 
 type WritingStyle = 'sales' | 'lifestyle' | 'technical' | 'balanced';
 type StorytellingDepth = 'low' | 'medium' | 'high';
+
+const extractErrorMessage = (error: unknown, fallback: string) => {
+    if (!error || typeof error !== 'object') return fallback;
+
+    const candidate = error as {
+        message?: string;
+        response?: { data?: { message?: string } };
+    };
+
+    return candidate.response?.data?.message || candidate.message || fallback;
+};
 
 interface ArticleDetailModalProps {
     isOpen: boolean;
@@ -35,6 +46,10 @@ export default function ArticleDetailModal({
     const [isSaving, setIsSaving] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const [regenPreview, setRegenPreview] = useState<GeneratedArticle | null>(null);
+    const [isPostingFacebook, setIsPostingFacebook] = useState(false);
+    const [isLoadingFacebookSettings, setIsLoadingFacebookSettings] = useState(false);
+    const [isFacebookReady, setIsFacebookReady] = useState(false);
+    const [facebookPageName, setFacebookPageName] = useState('');
 
     const [editForm, setEditForm] = useState({
         title: '',
@@ -95,6 +110,30 @@ export default function ArticleDetailModal({
             storytellingDepth: 'medium',
         });
     }, [isOpen, initialMode, article]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const loadFacebookSettings = async () => {
+            setIsLoadingFacebookSettings(true);
+            try {
+                const response = await settingsApi.get();
+                const facebook = response.data?.facebook;
+                const hasToken = Boolean(facebook?.facebookToken?.trim());
+                const hasPage = Boolean(facebook?.pageId?.trim());
+
+                setIsFacebookReady(hasToken && hasPage);
+                setFacebookPageName(facebook?.pageName || '');
+            } catch {
+                setIsFacebookReady(false);
+                setFacebookPageName('');
+            } finally {
+                setIsLoadingFacebookSettings(false);
+            }
+        };
+
+        loadFacebookSettings();
+    }, [isOpen]);
 
     const parseHashtags = (value: string) => {
         return value
@@ -172,11 +211,26 @@ export default function ArticleDetailModal({
         }
     };
 
-    const handlePostFacebook = () => {
-        toast('🚧 Tính năng đăng Facebook đang được phát triển!', {
-            icon: '📢',
-            duration: 3000,
-        });
+    const handlePostFacebook = async () => {
+        if (!article) return;
+
+        if (!isFacebookReady) {
+            toast.error('Chưa cấu hình Facebook token trong Cài đặt');
+            return;
+        }
+
+        setIsPostingFacebook(true);
+        try {
+            const result = await postArticleToFacebook(article._id);
+            const pageName = result.pageName || facebookPageName || 'Fanpage';
+            const postId = result.postId ? ` • Post ID: ${result.postId}` : '';
+            toast.success(`Đăng Facebook thành công lên ${pageName}${postId}`);
+        } catch (error) {
+            console.error('Failed to post article to Facebook:', error);
+            toast.error(extractErrorMessage(error, 'Không thể đăng bài lên Facebook'));
+        } finally {
+            setIsPostingFacebook(false);
+        }
     };
 
     const formatDate = (date: string) => {
@@ -296,6 +350,10 @@ export default function ArticleDetailModal({
     };
 
     if (typeof window === 'undefined') return null;
+
+    const disabledFacebookReason = !isFacebookReady
+        ? 'Chưa cấu hình Facebook token trong Cài đặt'
+        : '';
 
     return createPortal(
         <AnimatePresence>
@@ -795,14 +853,25 @@ export default function ArticleDetailModal({
 
                                 <button
                                     onClick={handlePostFacebook}
-                                    className="flex items-center justify-center gap-2 px-4 h-11 rounded-xl bg-[#1877F2] text-white font-medium hover:bg-[#166FE5] transition-colors"
+                                    disabled={isLoadingFacebookSettings || !!disabledFacebookReason || isPostingFacebook}
+                                    title={disabledFacebookReason || undefined}
+                                    className="flex items-center justify-center gap-2 px-4 h-11 rounded-xl bg-[#1877F2] text-white font-medium hover:bg-[#166FE5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                                     </svg>
-                                    Đăng Facebook
+                                    {disabledFacebookReason === 'Chưa cấu hình Facebook token trong Cài đặt'
+                                        ? 'Chưa cấu hình Facebook token trong Cài đặt'
+                                        : isPostingFacebook
+                                            ? 'Đang đăng Facebook...'
+                                            : 'Đăng Facebook'}
                                 </button>
                             </div>
+                            {disabledFacebookReason && (
+                                <p className="mt-2 text-xs text-amber-700">
+                                    {disabledFacebookReason}
+                                </p>
+                            )}
                         </div>
                     </motion.div>
                 </motion.div>

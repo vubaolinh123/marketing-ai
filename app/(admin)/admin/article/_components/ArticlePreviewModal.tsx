@@ -1,17 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui';
-import { getImageUrl } from '@/lib/api';
-import type { GeneratedArticle } from '@/lib/fakeData';
+import { getImageUrl, postArticleToFacebook, settingsApi, type GeneratedArticle } from '@/lib/api';
+import toast from '@/lib/toast';
+
+type PreviewArticle = GeneratedArticle & {
+    articleId?: string;
+};
 
 interface ArticlePreviewModalProps {
     isOpen: boolean;
     onClose: () => void;
-    article: GeneratedArticle | null;
+    article: PreviewArticle | null;
     customImages?: string[];
 }
+
+const extractErrorMessage = (error: unknown, fallback: string) => {
+    if (!error || typeof error !== 'object') return fallback;
+
+    const candidate = error as {
+        message?: string;
+        response?: { data?: { message?: string } };
+    };
+
+    return candidate.response?.data?.message || candidate.message || fallback;
+};
 
 export default function ArticlePreviewModal({
     isOpen,
@@ -20,6 +35,42 @@ export default function ArticlePreviewModal({
     customImages,
 }: ArticlePreviewModalProps) {
     const [copied, setCopied] = useState(false);
+    const [isPostingFacebook, setIsPostingFacebook] = useState(false);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+    const [isFacebookReady, setIsFacebookReady] = useState(false);
+    const [facebookPageName, setFacebookPageName] = useState('');
+    const [hasFetchedFacebookSettings, setHasFetchedFacebookSettings] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen || hasFetchedFacebookSettings) return;
+
+        const loadSettings = async () => {
+            setIsLoadingSettings(true);
+            try {
+                const response = await settingsApi.get();
+                const facebook = response.data?.facebook;
+                const hasToken = Boolean(facebook?.facebookToken?.trim());
+                const hasPage = Boolean(facebook?.pageId?.trim());
+
+                setIsFacebookReady(hasToken && hasPage);
+                setFacebookPageName(facebook?.pageName || '');
+            } catch {
+                setIsFacebookReady(false);
+                setFacebookPageName('');
+            } finally {
+                setHasFetchedFacebookSettings(true);
+                setIsLoadingSettings(false);
+            }
+        };
+
+        loadSettings();
+    }, [isOpen, hasFetchedFacebookSettings]);
+
+    const disabledReason = useMemo(() => {
+        if (!article?.articleId) return 'Bài viết chưa được lưu, không thể đăng Facebook';
+        if (!isFacebookReady) return 'Chưa cấu hình Facebook token trong Cài đặt';
+        return '';
+    }, [article?.articleId, isFacebookReady]);
 
     if (!article) return null;
 
@@ -48,6 +99,30 @@ export default function ArticlePreviewModal({
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error('Failed to copy:', err);
+        }
+    };
+
+    const handlePostFacebook = async () => {
+        if (!article.articleId) {
+            toast.error('Bài viết chưa được lưu, không thể đăng Facebook');
+            return;
+        }
+
+        if (!isFacebookReady) {
+            toast.error('Chưa cấu hình Facebook token trong Cài đặt');
+            return;
+        }
+
+        setIsPostingFacebook(true);
+        try {
+            const result = await postArticleToFacebook(article.articleId);
+            const pageName = result.pageName || facebookPageName || 'Fanpage';
+            const postId = result.postId ? ` • Post ID: ${result.postId}` : '';
+            toast.success(`Đăng Facebook thành công lên ${pageName}${postId}`);
+        } catch (error) {
+            toast.error(extractErrorMessage(error, 'Không thể đăng bài lên Facebook'));
+        } finally {
+            setIsPostingFacebook(false);
         }
     };
 
@@ -165,14 +240,24 @@ export default function ArticlePreviewModal({
                                     variant="primary"
                                     size="lg"
                                     className="flex-1 !bg-[#1877F2] hover:!bg-[#166FE5]"
-                                    onClick={() => alert('Tính năng đăng nhập Facebook sẽ được phát triển!')}
+                                    onClick={handlePostFacebook}
+                                    isLoading={isPostingFacebook}
+                                    disabled={isLoadingSettings || !!disabledReason}
+                                    title={disabledReason || undefined}
                                 >
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                                     </svg>
-                                    Đăng lên Facebook
+                                    {disabledReason === 'Chưa cấu hình Facebook token trong Cài đặt'
+                                        ? 'Chưa cấu hình Facebook token trong Cài đặt'
+                                        : 'Đăng lên Facebook'}
                                 </Button>
                             </div>
+                            {disabledReason && (
+                                <p className="mt-2 text-xs text-amber-700">
+                                    {disabledReason}
+                                </p>
+                            )}
                         </div>
                     </motion.div>
                 </motion.div>

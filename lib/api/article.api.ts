@@ -48,6 +48,13 @@ export interface Article extends GeneratedArticle {
     updatedAt: string;
 }
 
+export interface FacebookPostResult {
+    postId?: string;
+    pageId?: string;
+    pageName?: string;
+    [key: string]: unknown;
+}
+
 /**
  * Generate article with AI (preview only, not saved)
  */
@@ -116,5 +123,13 @@ export async function saveArticle(data: {
     status?: 'processing' | 'failed' | 'draft' | 'published';
 }): Promise<Article> {
     const response = await api.post('/articles', data);
+    return response.data.data;
+}
+
+/**
+ * Publish article to configured Facebook page
+ */
+export async function postArticleToFacebook(articleId: string): Promise<FacebookPostResult> {
+    const response = await api.post(`/articles/${articleId}/post-facebook`);
     return response.data.data;
 }

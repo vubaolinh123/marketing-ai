@@ -43,6 +43,18 @@ export interface ProductSettings {
 
 export interface FacebookSettings {
     facebookToken: string;
+    pageId?: string;
+    pageName?: string;
+    tokenExpiresAt?: string;
+}
+
+export interface FacebookTokenVerificationResult {
+    isValid?: boolean;
+    valid?: boolean;
+    pageId?: string;
+    pageName?: string;
+    tokenExpiresAt?: string;
+    expiresAt?: string;
 }
 
 export interface AIModelsSettings {
@@ -93,6 +105,16 @@ export const settingsApi = {
         data: T
     ): Promise<ApiResponse<AISettings>> {
         const response = await api.patch<ApiResponse<AISettings>>(`/ai-settings/${section}`, data);
+        return response.data;
+    },
+
+    /**
+     * Verify Facebook page access token and fetch page metadata
+     */
+    async verifyFacebookToken(facebookToken: string): Promise<ApiResponse<FacebookTokenVerificationResult>> {
+        const response = await api.post<ApiResponse<FacebookTokenVerificationResult>>('/ai-settings/facebook/verify', {
+            facebookToken,
+        });
         return response.data;
     },
 

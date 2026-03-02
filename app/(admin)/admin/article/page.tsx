@@ -19,6 +19,7 @@ const ArticlePreviewModal = dynamic(() => import('./_components/ArticlePreviewMo
 type Step = 'mode' | 'form' | 'image' | 'generating' | 'preview';
 
 interface GeneratedArticle {
+    articleId?: string;
     title: string;
     content: string;
     hashtags: string[];
@@ -89,6 +90,7 @@ export default function ArticlePage() {
 
             // Set generated article data
             const article: GeneratedArticle = {
+                articleId: result.article?._id,
                 title: result.generated.title,
                 content: result.generated.content,
                 hashtags: result.generated.hashtags || [],
@@ -223,6 +225,7 @@ export default function ArticlePage() {
             });
 
             const article: GeneratedArticle = {
+                articleId: result.article?._id,
                 title: result.generated.title,
                 content: result.generated.content,
                 hashtags: result.generated.hashtags || [],
