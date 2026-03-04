@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { showError, showSuccess } from '@/lib/toast';
+import RoleBadge from './RoleBadge';
 
 export default function SwitchUserControl() {
     const router = useRouter();
@@ -24,12 +25,13 @@ export default function SwitchUserControl() {
         name: string;
         email: string;
         avatar?: string;
-        role: 'admin' | 'user';
+        role: 'admin' | 'staff' | 'user';
         isActive?: boolean;
     }>>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const canSwitch = user?.role === 'admin';
+    const canSwitch = user?.role === 'admin' || user?.role === 'staff';
+    const isStaff = user?.role === 'staff';
 
     const loadTargets = async (keyword = '') => {
         if (!canSwitch) return;
@@ -48,12 +50,13 @@ export default function SwitchUserControl() {
 
     const filteredTargets = useMemo(() => {
         const keyword = search.trim().toLowerCase();
-        if (!keyword) return targets;
-        return targets.filter((target) =>
+        const roleFilteredTargets = isStaff ? targets.filter((target) => target.role === 'user') : targets;
+        if (!keyword) return roleFilteredTargets;
+        return roleFilteredTargets.filter((target) =>
             target.name.toLowerCase().includes(keyword) ||
             target.email.toLowerCase().includes(keyword)
         );
-    }, [targets, search]);
+    }, [targets, search, isStaff]);
 
     const handleOpen = async () => {
         if (!canSwitch) return;
@@ -66,9 +69,14 @@ export default function SwitchUserControl() {
         name: string;
         email: string;
         avatar?: string;
-        role: 'admin' | 'user';
+        role: 'admin' | 'staff' | 'user';
         isActive?: boolean;
     }) => {
+        if (isStaff && target.role !== 'user') {
+            showError('Nhân viên chỉ được switch sang tài khoản user');
+            return;
+        }
+
         setImpersonation(target);
         setIsOpen(false);
         showSuccess(`Đã chuyển sang ngữ cảnh: ${target.name}`);
@@ -76,7 +84,7 @@ export default function SwitchUserControl() {
 
     const handleExit = () => {
         setImpersonation(null);
-        showSuccess('Đã quay lại ngữ cảnh admin');
+        showSuccess('Đã quay lại ngữ cảnh tài khoản gốc');
     };
 
     if (!canSwitch) {
@@ -163,6 +171,9 @@ export default function SwitchUserControl() {
                                         className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#D7E4FF] text-sm focus:outline-none focus:ring-2 focus:ring-[#2F67F5]/35"
                                     />
                                 </div>
+                                {isStaff && (
+                                    <p className="mt-2 text-xs text-amber-700">Bạn chỉ có thể switch sang tài khoản user.</p>
+                                )}
                             </div>
 
                             <div className="max-h-[360px] overflow-y-auto p-2">
@@ -195,13 +206,7 @@ export default function SwitchUserControl() {
                                                 <div className="text-sm font-medium text-gray-900 truncate">{target.name}</div>
                                                 <div className="text-xs text-gray-500 truncate">{target.email}</div>
                                             </div>
-                                            <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${
-                                                target.role === 'admin'
-                                                    ? 'bg-[#EDE8FF] text-[#5D3EC4]'
-                                                    : 'bg-[#E9F2FF] text-[#2E62D9]'
-                                            }`}>
-                                                {target.role}
-                                            </span>
+                                            <RoleBadge role={target.role} size="sm" />
                                         </button>
                                     );
                                 })}

@@ -50,10 +50,22 @@ const tools = [
         color: 'from-red-500 to-pink-500',
     },
     {
+        title: 'Quản lý user',
+        description: 'Quản lý tài khoản người dùng theo quyền truy cập',
+        href: '/admin/users',
+        allowedRoles: ['admin', 'staff'],
+        icon: (
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5V4H2v16h5m10 0v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6m10 0H7" />
+            </svg>
+        ),
+        color: 'from-sky-500 to-blue-600',
+    },
+    {
         title: 'Token usage',
         description: 'Theo dõi token Gemini theo người dùng và công cụ',
         href: '/admin/token-usage',
-        requiresAdmin: true,
+        allowedRoles: ['admin'],
         icon: (
             <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3v18h18" />
@@ -88,7 +100,11 @@ const itemVariants = {
 
 export default function AdminDashboard() {
     const { user } = useAuth();
-    const visibleTools = tools.filter((tool) => !tool.requiresAdmin || user?.role === 'admin');
+    const visibleTools = tools.filter((tool) => {
+        if (!tool.allowedRoles || tool.allowedRoles.length === 0) return true;
+        if (!user?.role) return false;
+        return tool.allowedRoles.includes(user.role);
+    });
 
     return (
         <motion.div

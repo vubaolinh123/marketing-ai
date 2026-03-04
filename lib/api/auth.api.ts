@@ -7,7 +7,7 @@ export interface AuthUser {
     name: string;
     email: string;
     avatar?: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'staff' | 'admin';
 }
 
 export interface AuthMeResponse extends AuthUser {

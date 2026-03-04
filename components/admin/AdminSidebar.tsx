@@ -18,7 +18,7 @@ interface MenuItem {
     icon: React.ReactNode;
     href?: string;
     children?: { label: string; href: string }[];
-    requiresAdmin?: boolean;
+    allowedRoles?: Array<'admin' | 'staff' | 'user'>;
 }
 
 const menuItems: MenuItem[] = [
@@ -83,7 +83,7 @@ const menuItems: MenuItem[] = [
     {
         label: 'Quản lý user',
         href: '/admin/users',
-        requiresAdmin: true,
+        allowedRoles: ['admin', 'staff'],
         icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5V4H2v16h5m10 0v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6m10 0H7" />
@@ -93,7 +93,7 @@ const menuItems: MenuItem[] = [
     {
         label: 'Token usage',
         href: '/admin/token-usage',
-        requiresAdmin: true,
+        allowedRoles: ['admin'],
         icon: (
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18" />
@@ -145,7 +145,11 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
             ? -280
             : 0;
 
-    const visibleMenuItems = menuItems.filter((item) => !item.requiresAdmin || user?.role === 'admin');
+    const visibleMenuItems = menuItems.filter((item) => {
+        if (!item.allowedRoles || item.allowedRoles.length === 0) return true;
+        if (!user?.role) return false;
+        return item.allowedRoles.includes(user.role);
+    });
 
     return (
         <>

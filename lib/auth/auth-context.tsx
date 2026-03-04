@@ -43,7 +43,7 @@ function normalizeUserPayload(data?: {
     name?: string;
     email?: string;
     avatar?: string;
-    role?: 'admin' | 'user';
+    role?: 'admin' | 'staff' | 'user';
 } | null): User | null {
     if (!data) return null;
 
@@ -153,14 +153,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                         if (!effectiveUser) {
                             const actAsUserId = getActAsUserId();
-                            if (actAsUserId && user?.role === 'admin') {
+                            if (actAsUserId && (user?.role === 'admin' || user?.role === 'staff')) {
                                 effectiveUser = savedAuth.effectiveUser && savedAuth.effectiveUser.id === actAsUserId
                                     ? savedAuth.effectiveUser
                                     : null;
                             }
                         }
 
-                        const isImpersonating = !!effectiveUser && user?.role === 'admin';
+                        const isImpersonating = !!effectiveUser && (user?.role === 'admin' || user?.role === 'staff');
 
                         saveAuthToStorage({ user, effectiveUser });
                         setRefreshHint();
@@ -309,7 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const setImpersonation = useCallback((user: User | null) => {
         setState((prev) => {
-            if (!prev.user || prev.user.role !== 'admin') {
+            if (!prev.user || (prev.user.role !== 'admin' && prev.user.role !== 'staff')) {
                 return prev;
             }
 

@@ -6,7 +6,7 @@ export interface AdminUser {
     name: string;
     email: string;
     avatar?: string;
-    role: 'admin' | 'user';
+    role: 'admin' | 'staff' | 'user';
     isActive: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -15,7 +15,7 @@ export interface AdminUser {
 export interface AdminUsersQuery {
     page?: number;
     limit?: number;
-    role?: '' | 'admin' | 'user';
+    role?: '' | 'admin' | 'staff' | 'user';
     status?: '' | 'active' | 'inactive';
     search?: string;
 }
@@ -40,13 +40,13 @@ export interface CreateAdminUserPayload {
     name: string;
     email: string;
     password: string;
-    role?: 'admin' | 'user';
+    role?: 'admin' | 'staff' | 'user';
     isActive?: boolean;
 }
 
 export interface UpdateAdminUserPayload {
     name?: string;
-    role?: 'admin' | 'user';
+    role?: 'admin' | 'staff' | 'user';
     isActive?: boolean;
 }
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Input } from '@/components/ui';
+import RoleBadge from '@/components/admin/RoleBadge';
 import { useAuth } from '@/lib/auth';
 import { adminUserApi, authApi, type AdminUser } from '@/lib/api';
 import { showError, showSuccess } from '@/lib/toast';
@@ -17,7 +18,7 @@ interface CreateUserFormState {
     email: string;
     password: string;
     confirmPassword: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'staff' | 'admin';
     isActive: boolean;
 }
 
@@ -72,6 +73,7 @@ function formatDate(value?: string) {
 
 export default function AdminUsersPage() {
     const { user, setImpersonation } = useAuth();
+    const isStaff = user?.role === 'staff';
 
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +89,7 @@ export default function AdminUsersPage() {
     const [isRevokingOtherSessions, setIsRevokingOtherSessions] = useState(false);
 
     const [search, setSearch] = useState('');
-    const [roleFilter, setRoleFilter] = useState<'' | 'user' | 'admin'>('');
+    const [roleFilter, setRoleFilter] = useState<'' | 'user' | 'staff' | 'admin'>('');
     const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'inactive'>('');
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -131,6 +133,11 @@ export default function AdminUsersPage() {
     }, [search, roleFilter, statusFilter]);
 
     const handleToggleStatus = async (target: AdminUser) => {
+        if (isStaff && (target.role === 'admin' || target.role === 'staff')) {
+            showError('Chỉ admin mới được thay đổi trạng thái tài khoản admin/staff');
+            return;
+        }
+
         try {
             const response = await adminUserApi.updateUser(target.id, {
                 isActive: !target.isActive
@@ -148,7 +155,12 @@ export default function AdminUsersPage() {
         }
     };
 
-    const handleRoleChange = async (target: AdminUser, role: 'user' | 'admin') => {
+    const handleRoleChange = async (target: AdminUser, role: 'user' | 'staff' | 'admin') => {
+        if (isStaff && (target.role !== 'user' || role !== 'user')) {
+            showError('Nhân viên chỉ được giữ vai trò user, không thể đổi role này');
+            return;
+        }
+
         try {
             const response = await adminUserApi.updateUser(target.id, { role });
 
@@ -175,6 +187,11 @@ export default function AdminUsersPage() {
             return;
         }
 
+        if (isStaff && createForm.role !== 'user') {
+            showError('Nhân viên chỉ được tạo tài khoản user');
+            return;
+        }
+
         try {
             setIsCreating(true);
 
@@ -182,7 +199,7 @@ export default function AdminUsersPage() {
                 name: createForm.name,
                 email: createForm.email,
                 password: createForm.password,
-                role: createForm.role,
+                role: isStaff ? 'user' : createForm.role,
                 isActive: createForm.isActive
             });
 
@@ -203,6 +220,11 @@ export default function AdminUsersPage() {
     };
 
     const handleOpenEditModal = (target: AdminUser) => {
+        if (isStaff && (target.role === 'admin' || target.role === 'staff')) {
+            showError('Chỉ admin mới được chỉnh sửa tài khoản admin/staff');
+            return;
+        }
+
         setEditForm({
             id: target.id,
             name: target.name,
@@ -270,6 +292,11 @@ export default function AdminUsersPage() {
     };
 
     const handleSwitchAs = (target: AdminUser) => {
+        if (isStaff && target.role !== 'user') {
+            showError('Nhân viên chỉ được switch sang tài khoản user');
+            return;
+        }
+
         setImpersonation({
             id: target.id,
             name: target.name,
@@ -282,6 +309,11 @@ export default function AdminUsersPage() {
     };
 
     const handleOpenDeleteModal = (target: AdminUser) => {
+        if (isStaff && (target.role === 'admin' || target.role === 'staff')) {
+            showError('Chỉ admin mới được xóa tài khoản admin/staff');
+            return;
+        }
+
         if (!user?.id || user.id === target.id) {
             showError('Bạn không thể xóa tài khoản đang đăng nhập');
             return;
@@ -295,6 +327,11 @@ export default function AdminUsersPage() {
     };
 
     const handleOpenSessionsModal = (target: AdminUser) => {
+        if (isStaff && (target.role === 'admin' || target.role === 'staff')) {
+            showError('Chỉ admin mới được quản lý thiết bị của admin/staff');
+            return;
+        }
+
         setSessionsTargetUser({
             id: target.id,
             name: target.name,
@@ -369,7 +406,7 @@ export default function AdminUsersPage() {
         return `Hiển thị ${users.length} người dùng trên trang này`;
     }, [isLoading, users.length]);
 
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'staff') {
         return (
             <div className="w-[96%] max-w-[1200px] mx-auto py-10">
                 <div className="bg-white border border-red-200 text-red-600 rounded-2xl p-6">
@@ -453,11 +490,12 @@ export default function AdminUsersPage() {
 
                     <select
                         value={roleFilter}
-                        onChange={(e) => setRoleFilter(e.target.value as '' | 'admin' | 'user')}
+                        onChange={(e) => setRoleFilter(e.target.value as '' | 'admin' | 'staff' | 'user')}
                         className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90D9]/30"
                     >
                         <option value="">Tất cả role</option>
-                        <option value="admin">Admin</option>
+                        {!isStaff && <option value="admin">Admin</option>}
+                        {!isStaff && <option value="staff">Staff</option>}
                         <option value="user">User</option>
                     </select>
 
@@ -517,6 +555,8 @@ export default function AdminUsersPage() {
                             {!isLoading && users.map((item, index) => {
                                 const isSelf = user?.id === item.id;
                                 const isDeleting = deletingUserId === item.id;
+                                const isProtectedRole = item.role === 'admin' || item.role === 'staff';
+                                const isStaffRestrictedTarget = isStaff && isProtectedRole;
 
                                 return (
                                     <motion.tr
@@ -539,25 +579,41 @@ export default function AdminUsersPage() {
                                         </td>
 
                                         <td className="px-4 py-3">
-                                            <select
-                                                value={item.role}
-                                                onChange={(e) => handleRoleChange(item, e.target.value as 'admin' | 'user')}
-                                                className={`text-xs px-2 py-1 rounded-full border font-semibold ${
-                                                    item.role === 'admin'
-                                                        ? 'bg-violet-100 text-violet-700 border-violet-200'
-                                                        : 'bg-blue-100 text-blue-700 border-blue-200'
-                                                }`}
-                                            >
-                                                <option value="user">user</option>
-                                                <option value="admin">admin</option>
-                                            </select>
+                                            {user?.role === 'admin' ? (
+                                                <select
+                                                    value={item.role}
+                                                    onChange={(e) => handleRoleChange(item, e.target.value as 'admin' | 'staff' | 'user')}
+                                                    className={`text-xs px-2 py-1 rounded-full border font-semibold ${
+                                                        item.role === 'admin'
+                                                            ? 'bg-violet-100 text-violet-700 border-violet-200'
+                                                            : item.role === 'staff'
+                                                                ? 'bg-amber-100 text-amber-700 border-amber-200'
+                                                                : 'bg-blue-100 text-blue-700 border-blue-200'
+                                                    }`}
+                                                >
+                                                    <option value="user">user</option>
+                                                    <option value="staff">staff</option>
+                                                    <option value="admin">admin</option>
+                                                </select>
+                                            ) : isStaffRestrictedTarget ? (
+                                                <div className="space-y-1">
+                                                    <RoleBadge role={item.role} />
+                                                    <div className="text-[11px] text-amber-700 font-medium">Chỉ admin quản lý</div>
+                                                </div>
+                                            ) : (
+                                                <RoleBadge role={item.role} />
+                                            )}
                                         </td>
 
                                         <td className="px-4 py-3">
                                             <button
                                                 onClick={() => handleToggleStatus(item)}
+                                                disabled={isStaffRestrictedTarget}
+                                                title={isStaffRestrictedTarget ? 'Chỉ admin quản lý tài khoản này' : undefined}
                                                 className={`text-xs px-2.5 py-1 rounded-full border font-semibold transition-colors ${
-                                                    item.isActive
+                                                    isStaffRestrictedTarget
+                                                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                                        : item.isActive
                                                         ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200'
                                                         : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
                                                 }`}
@@ -569,38 +625,44 @@ export default function AdminUsersPage() {
                                         <td className="px-4 py-3 text-sm text-gray-600">{formatDate(item.createdAt)}</td>
 
                                         <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <button
-                                                    onClick={() => handleOpenEditModal(item)}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF4FF] text-[#1646C7] hover:bg-[#E2ECFF] transition-colors"
-                                                >
-                                                    Sửa
-                                                </button>
-                                                <button
-                                                    onClick={() => handleOpenSessionsModal(item)}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition-colors"
-                                                >
-                                                    Thiết bị
-                                                </button>
-                                                <button
-                                                    onClick={() => handleSwitchAs(item)}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#FFD700]/30 text-gray-900 hover:bg-[#FFD700]/50 transition-colors"
-                                                >
-                                                    Switch user
-                                                </button>
-                                                <button
-                                                    onClick={() => handleOpenDeleteModal(item)}
-                                                    disabled={isSelf || isDeleting}
-                                                    title={isSelf ? 'Không thể xóa tài khoản đang đăng nhập' : undefined}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                                                        isSelf || isDeleting
-                                                            ? 'bg-red-100 text-red-300 cursor-not-allowed border border-red-200'
-                                                            : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
-                                                    }`}
-                                                >
-                                                    {isDeleting ? 'Đang xóa...' : 'Xóa'}
-                                                </button>
-                                            </div>
+                                            {isStaffRestrictedTarget ? (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                                                    Chỉ admin quản lý
+                                                </span>
+                                            ) : (
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(item)}
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#EEF4FF] text-[#1646C7] hover:bg-[#E2ECFF] transition-colors"
+                                                    >
+                                                        Sửa
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenSessionsModal(item)}
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 transition-colors"
+                                                    >
+                                                        Thiết bị
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSwitchAs(item)}
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#FFD700]/30 text-gray-900 hover:bg-[#FFD700]/50 transition-colors"
+                                                    >
+                                                        Switch user
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenDeleteModal(item)}
+                                                        disabled={isSelf || isDeleting}
+                                                        title={isSelf ? 'Không thể xóa tài khoản đang đăng nhập' : undefined}
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                                                            isSelf || isDeleting
+                                                                ? 'bg-red-100 text-red-300 cursor-not-allowed border border-red-200'
+                                                                : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
+                                                        }`}
+                                                    >
+                                                        {isDeleting ? 'Đang xóa...' : 'Xóa'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     </motion.tr>
                                 );
@@ -636,7 +698,11 @@ export default function AdminUsersPage() {
                         >
                             <div className="mb-4">
                                 <h3 className="text-xl font-bold text-gray-900">Tạo tài khoản mới</h3>
-                                <p className="text-sm text-gray-500 mt-1">Tạo user/admin để quản lý nội dung AI.</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    {isStaff
+                                        ? 'Nhân viên chỉ được tạo tài khoản user.'
+                                        : 'Tạo user/staff/admin để quản lý nội dung AI.'}
+                                </p>
                             </div>
 
                             <div className="space-y-4">
@@ -674,14 +740,28 @@ export default function AdminUsersPage() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                                        <select
-                                            value={createForm.role}
-                                            onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value as 'admin' | 'user' }))}
-                                            className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90D9]/30"
-                                        >
-                                            <option value="user">user</option>
-                                            <option value="admin">admin</option>
-                                        </select>
+                                        {isStaff ? (
+                                            <>
+                                                <select
+                                                    value="user"
+                                                    disabled
+                                                    className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
+                                                >
+                                                    <option value="user">user</option>
+                                                </select>
+                                                <p className="text-xs text-amber-700 mt-1">Chỉ admin mới được gán role admin/staff.</p>
+                                            </>
+                                        ) : (
+                                            <select
+                                                value={createForm.role}
+                                                onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value as 'admin' | 'staff' | 'user' }))}
+                                                className="w-full h-11 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90D9]/30"
+                                            >
+                                                <option value="user">user</option>
+                                                <option value="staff">staff</option>
+                                                <option value="admin">admin</option>
+                                            </select>
+                                        )}
                                     </div>
 
                                     <div>

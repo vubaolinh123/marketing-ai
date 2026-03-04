@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { motion } from 'framer-motion';
 import SwitchUserControl from './SwitchUserControl';
+import RoleBadge from './RoleBadge';
 
 interface AdminHeaderProps {
     onMenuClick: () => void;
@@ -77,9 +78,12 @@ export default function AdminHeader({ onMenuClick, isCollapsed, onToggleCollapse
                     <div className="w-8 h-8 rounded-full bg-[#FFD84D] flex items-center justify-center text-[#1C2742] font-bold text-sm shadow-[0_8px_16px_rgba(255,212,75,0.38)]">
                         {user?.name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm text-[#1F2B45] font-semibold">
-                        {user?.name}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm text-[#1F2B45] font-semibold truncate max-w-[180px] lg:max-w-[240px]">
+                            {user?.name}
+                        </span>
+                        {user?.role && <RoleBadge role={user.role} size="sm" className="shrink-0" />}
+                    </div>
                 </div>
                 <motion.button
                     whileHover={{ scale: 1.05 }}

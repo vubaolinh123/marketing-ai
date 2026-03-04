@@ -4,7 +4,7 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'staff' | 'admin';
     isActive?: boolean;
     createdAt?: Date;
 }
