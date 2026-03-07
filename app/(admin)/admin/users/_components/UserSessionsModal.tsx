@@ -317,7 +317,7 @@ export default function UserSessionsModal({ isOpen, targetUser, onClose }: UserS
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-5 overflow-y-auto"
+                    className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-3 md:p-5 overflow-y-auto"
                     onClick={() => !revokingSessionId && onClose()}
                 >
                     <motion.div
@@ -325,7 +325,7 @@ export default function UserSessionsModal({ isOpen, targetUser, onClose }: UserS
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.96, opacity: 0 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl w-full max-w-5xl mx-auto p-5 md:p-6 shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col"
+                        className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-5xl mx-auto p-5 md:p-6 shadow-2xl border border-gray-100 max-h-[95dvh] sm:max-h-[92dvh] flex flex-col"
                     >
                         <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
                             <div>
@@ -359,7 +359,7 @@ export default function UserSessionsModal({ isOpen, targetUser, onClose }: UserS
                             </div>
                         </div>
 
-                        <div className="mt-4 overflow-y-auto pr-1">
+                        <div className="mt-4 min-h-0 overflow-y-auto overscroll-contain pr-1">
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5">
                                 <section className="rounded-2xl border border-gray-200 p-4 bg-[#FCFDFF]">
                                     <h4 className="text-sm font-semibold text-gray-900 mb-3">Phiên đang hoạt động</h4>

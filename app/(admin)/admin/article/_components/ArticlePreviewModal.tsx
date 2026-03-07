@@ -191,7 +191,7 @@ export default function ArticlePreviewModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-stretch justify-center p-5 overflow-hidden"
+                    className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-stretch justify-center p-0 sm:p-2 md:p-5 overflow-hidden"
                     onClick={onClose}
                 >
                     <motion.div
@@ -199,7 +199,7 @@ export default function ArticlePreviewModal({
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="relative bg-white w-full max-w-6xl mx-auto h-full rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+                        className="relative bg-white w-full max-w-6xl mx-auto h-full max-h-[100dvh] sm:max-h-[96dvh] rounded-none sm:rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                     >
                         {/* Header */}
                         <div className="bg-gradient-to-r from-[#1F2937] to-[#111827] p-4 sm:p-6 text-white shrink-0">
@@ -324,7 +324,7 @@ export default function ArticlePreviewModal({
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="absolute inset-0 z-30 bg-black/55 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+                                    className="absolute inset-0 z-30 bg-black/55 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6"
                                     onClick={() => !isPostingFacebook && setIsFacebookOptionsOpen(false)}
                                 >
                                     <motion.div
@@ -332,7 +332,7 @@ export default function ArticlePreviewModal({
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 18, scale: 0.98 }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden"
+                                        className="w-full max-w-3xl rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden max-h-[90dvh] sm:max-h-[85dvh] flex flex-col"
                                     >
                                         <div className="px-5 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
                                             <h3 className="text-base sm:text-lg font-semibold text-gray-900">Đăng Facebook - Chọn hình ảnh</h3>
@@ -341,7 +341,7 @@ export default function ArticlePreviewModal({
                                             </p>
                                         </div>
 
-                                        <div className="px-5 sm:px-6 py-4 max-h-[58vh] overflow-y-auto overscroll-contain space-y-4">
+                                        <div className="px-3 sm:px-5 md:px-6 py-4 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-4">
                                             {facebookPreviewImageUrls.length > 0 ? (
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     {facebookPreviewImageUrls.map((item, index) => {

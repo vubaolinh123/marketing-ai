@@ -26,7 +26,7 @@ export default function DeleteConfirmModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 py-4"
+                    className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
                     onClick={onClose}
                 >
                     <motion.div
@@ -34,7 +34,7 @@ export default function DeleteConfirmModal({
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.9, opacity: 0 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl max-w-md w-full mx-auto p-6 shadow-2xl"
+                        className="bg-white rounded-2xl max-w-md w-full mx-auto p-6 shadow-2xl max-h-[90dvh] overflow-y-auto"
                     >
                         {/* Icon */}
                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">

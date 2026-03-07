@@ -103,12 +103,12 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.24, ease: 'easeOut' }}
-                        className="fixed inset-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/70 rounded-3xl shadow-[0_18px_45px_rgba(15,23,42,0.25)] z-[1310] overflow-hidden flex flex-col border border-slate-200"
+                        className="fixed inset-0 sm:inset-2 md:inset-4 lg:inset-5 bg-gradient-to-br from-slate-50 via-white to-blue-50/70 rounded-none sm:rounded-2xl md:rounded-3xl shadow-[0_18px_45px_rgba(15,23,42,0.25)] z-[1310] overflow-hidden flex flex-col border border-slate-200"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 bg-gradient-to-r from-white via-slate-50 to-blue-50/80">
+                        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-5 border-b border-slate-200 bg-gradient-to-r from-white via-slate-50 to-blue-50/80">
                             <div>
-                                <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+                                <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">
                                     Chi tiết kế hoạch Marketing
                                 </h2>
                                 {plan && (
@@ -128,7 +128,7 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 min-h-0 p-5 md:p-6 bg-gradient-to-b from-slate-50/80 to-blue-50/40 overflow-hidden">
+                        <div className="flex-1 min-h-0 p-3 sm:p-5 md:p-6 bg-gradient-to-b from-slate-50/80 to-blue-50/40 overflow-hidden">
                             {isLoading ? (
                                 <div className="flex items-center justify-center h-64">
                                     <div className="flex flex-col items-center gap-3">
@@ -149,9 +149,9 @@ export default function PlanDetailModal({ isOpen, planId, onClose }: PlanDetailM
                                     </div>
                                 </div>
                             ) : plan ? (
-                                <div className="h-full min-h-0 flex flex-col xl:flex-row gap-6 xl:gap-7">
+                                <div className="h-full min-h-0 flex flex-col xl:flex-row gap-6 xl:gap-7 overflow-y-auto xl:overflow-hidden">
                                     {/* Main content */}
-                                    <div className="flex-1 min-w-0 space-y-5 xl:overflow-y-auto xl:pr-1">
+                                    <div className="flex-1 min-h-0 min-w-0 space-y-5 overflow-y-auto xl:pr-1">
                                         <PlanSummary plan={plan} />
                                         <PlanCalendarView
                                             plan={plan}

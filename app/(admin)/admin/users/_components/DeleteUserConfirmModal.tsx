@@ -34,7 +34,7 @@ export default function DeleteUserConfirmModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-5 overflow-y-auto"
+                    className="fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
                     onClick={() => !isDeleting && onClose()}
                 >
                     <motion.div
@@ -42,7 +42,7 @@ export default function DeleteUserConfirmModal({
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.92, opacity: 0 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-2xl max-w-md w-full mx-auto p-6 shadow-2xl border border-gray-100"
+                        className="bg-white rounded-2xl max-w-md w-full mx-auto p-6 shadow-2xl border border-gray-100 max-h-[90dvh] overflow-y-auto"
                     >
                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
                             <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -74,14 +74,14 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[120] flex items-stretch justify-center p-5 overflow-hidden bg-black/70 backdrop-blur-sm"
+                className="fixed inset-0 z-[120] flex items-stretch justify-center p-0 sm:p-2 md:p-5 overflow-hidden bg-black/70 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1540px] h-full overflow-hidden border border-gray-200 flex flex-col"
+                    className="bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-[1540px] h-full overflow-hidden border border-gray-200 flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -103,10 +103,10 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                     </div>
 
                     {/* Image + Info */}
-                    <div className="flex-1 min-h-0 p-4 sm:p-5 bg-gray-50 overflow-hidden">
-                        <div className="h-full min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 lg:gap-5">
+                    <div className="flex-1 min-h-0 p-4 sm:p-5 bg-gray-50 overflow-y-auto overscroll-contain">
+                        <div className="min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 lg:gap-5 lg:h-full">
                             <div className="min-h-0 flex flex-col gap-4">
-                                <div className="relative flex-1 min-h-0 rounded-xl overflow-hidden bg-white border border-gray-200 shadow-inner p-2 sm:p-3 flex items-center justify-center">
+                                <div className="relative flex-1 min-h-0 max-h-[40vh] sm:max-h-none rounded-xl overflow-hidden bg-white border border-gray-200 shadow-inner p-2 sm:p-3 flex items-center justify-center">
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
@@ -162,7 +162,7 @@ export default function ImagePreviewModal({ image, onClose, onDownload }: ImageP
                                 )}
                             </div>
 
-                            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 h-full min-h-0 overflow-y-auto space-y-5">
+                            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 min-h-0 overflow-y-auto overscroll-contain space-y-5 lg:h-full">
                                 <div>
                                     <p className="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-2">Thông tin ảnh</p>
                                     <div className="grid grid-cols-1 gap-2 text-sm">

@@ -82,14 +82,14 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[1300] flex items-stretch justify-center p-5 overflow-hidden bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-[1300] flex items-stretch justify-center p-0 sm:p-2 md:p-5 overflow-y-auto overscroll-contain bg-black/50 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-[1480px] h-full overflow-hidden flex flex-col"
+                    className="bg-white rounded-none sm:rounded-2xl shadow-2xl w-full max-w-[1480px] h-full overflow-hidden flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -114,7 +114,7 @@ export default function ScriptViewModal({ isOpen, script, onClose }: ScriptViewM
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-y-auto px-4 md:px-5 lg:px-6 py-5 space-y-5">
+                    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 md:px-5 lg:px-6 py-5 space-y-5">
                         {/* Summary */}
                         {script.summary && (
                             <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100">

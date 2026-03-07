@@ -109,20 +109,22 @@ export default function PlanCalendarView({ plan, onDayClick, selectedDate }: Pla
                 </button>
             </div>
 
-            {/* Weekday Headers */}
-            <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80">
-                {WEEKDAYS.map(day => (
-                    <div key={day} className="py-3 text-center text-sm font-semibold text-slate-500 border-r border-slate-200 last:border-r-0">
-                        {day}
+            <div className="overflow-x-auto -mx-1 px-1 pb-2">
+                <div className="min-w-[680px]">
+                    {/* Weekday Headers */}
+                    <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80">
+                        {WEEKDAYS.map(day => (
+                            <div key={day} className="py-3 text-center text-sm font-semibold text-slate-500 border-r border-slate-200 last:border-r-0">
+                                {day}
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
 
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 auto-rows-fr">
+                    {/* Calendar Days */}
+                    <div className="grid grid-cols-7 auto-rows-fr">
                 {calendarDays.map((date, index) => {
                     if (!date) {
-                        return <div key={`empty-${index}`} className="min-h-[130px] xl:min-h-[160px] border-r border-b border-slate-200 bg-slate-50/70" />;
+                        return <div key={`empty-${index}`} className="min-h-[90px] sm:min-h-[110px] md:min-h-[130px] xl:min-h-[160px] border-r border-b border-slate-200 bg-slate-50/70" />;
                     }
 
                     const posts = postsByDate.get(date.toDateString()) || [];
@@ -138,7 +140,7 @@ export default function PlanCalendarView({ plan, onDayClick, selectedDate }: Pla
                             onClick={() => hasPosts && onDayClick(date, posts)}
                             transition={{ type: 'spring', stiffness: 280, damping: 24 }}
                             className={cn(
-                                'min-h-[130px] xl:min-h-[160px] border-r border-b border-slate-200 p-3 transition-all duration-200 flex flex-col gap-2',
+                                'min-h-[90px] sm:min-h-[110px] md:min-h-[130px] xl:min-h-[160px] border-r border-b border-slate-200 p-3 transition-all duration-200 flex flex-col gap-2',
                                 hasPosts && 'cursor-pointer hover:bg-blue-50/80',
                                 !inRange && 'bg-slate-50/80 text-slate-400',
                                 inRange && 'bg-white',
@@ -184,6 +186,8 @@ export default function PlanCalendarView({ plan, onDayClick, selectedDate }: Pla
                         </motion.div>
                     );
                 })}
+                    </div>
+                </div>
             </div>
         </div>
     );

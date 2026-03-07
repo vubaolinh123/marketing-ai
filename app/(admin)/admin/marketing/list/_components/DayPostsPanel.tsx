@@ -40,10 +40,10 @@ export default function DayPostsPanel({ date, posts, onClose }: DayPostsPanelPro
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="w-full bg-white/95 rounded-2xl border border-slate-200 overflow-hidden flex-shrink-0 shadow-[0_10px_30px_rgba(15,23,42,0.12)]"
+            className="w-full bg-white/95 rounded-2xl border border-slate-200 overflow-hidden flex-shrink-0 shadow-[0_10px_30px_rgba(15,23,42,0.12)] max-h-[60vh] xl:max-h-none flex flex-col"
         >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200 shrink-0">
                 <div>
                     <h3 className="font-semibold text-slate-800 text-lg leading-tight capitalize">
                         {date.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -61,7 +61,7 @@ export default function DayPostsPanel({ date, posts, onClose }: DayPostsPanelPro
             </div>
 
             {/* Posts List */}
-            <div className="p-4 xl:p-5 space-y-3.5 max-h-[calc(100vh-280px)] xl:max-h-[calc(100vh-300px)] overflow-y-auto bg-gradient-to-b from-white to-slate-50/70">
+            <div className="p-3 sm:p-4 xl:p-5 space-y-3.5 flex-1 min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-b from-white to-slate-50/70">
                 {posts.map((post, index) => {
                     const channelInfo = channelLabels[post.channel];
                     const typeInfo = postTypeLabels[post.postType || 'image'];
