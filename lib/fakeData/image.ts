@@ -77,7 +77,7 @@ export const displayInfoSuggestions = [
     'Tên sản phẩm + công dụng',
 ];
 
-export const adIntensitySuggestions = ['low', 'medium', 'high'];
+export const adIntensitySuggestions = ['Thấp', 'Vừa phải', 'Cao'];
 
 function normalizeText(value: string): string {
     return String(value || '')
@@ -125,14 +125,14 @@ export const targetAudienceSuggestions = [
 ];
 
 export const visualStyleSuggestions = [
-    'Photorealistic',
-    'Minimal clean',
-    'Luxury editorial',
-    'Bold commercial',
-    'Lifestyle candid',
+    'Ảnh chân thực (Photorealistic)',
+    'Tối giản sạch sẽ',
+    'Sang trọng editorial',
+    'Thương mại nổi bật',
+    'Lifestyle tự nhiên',
 ];
 
-export const realismPrioritySuggestions = ['high', 'balanced', 'stylized'];
+export const realismPrioritySuggestions = ['Cao (Chân thực)', 'Cân bằng', 'Phong cách hóa'];
 
 export interface GeneratedImage {
     id: string;
@@ -179,7 +179,7 @@ export const defaultImageInput: ImageGenerationInput = {
     adIntensity: 'medium',
     typographyGuidance: '',
     targetAudience: '',
-    visualStyle: 'Photorealistic',
+    visualStyle: 'Ảnh chân thực (Photorealistic)',
     realismPriority: 'high',
 };
 
