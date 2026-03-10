@@ -188,12 +188,12 @@ export default function ArticleForm({ onSubmit, isLoading, submitLabel = 'Tạo 
 
                 <div className="mt-3 flex flex-wrap gap-2">
                     {[
-                        'Brand Awareness',
-                        'Attract Leads',
-                        'Nurture & Educate',
-                        'Convert / Sales',
-                        'Retention & Loyalty',
-                        'Brand Positioning'
+                        'Tăng nhận diện thương hiệu',
+                        'Thu hút khách tiềm năng',
+                        'Nuôi dưỡng & giáo dục',
+                        'Chuyển đổi bán hàng',
+                        'Giữ chân & trung thành',
+                        'Định vị thương hiệu'
                     ].map((preset) => (
                         <button
                             key={preset}
