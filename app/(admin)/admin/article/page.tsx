@@ -276,8 +276,20 @@ export default function ArticlePage() {
 
         if (step === 'image') {
             setStep('form');
+            return;
         }
-    }, [step]);
+
+        // Allow going back from preview to edit image (ai_image mode) or form (other modes)
+        if (step === 'preview') {
+            if (mode === 'ai_image') {
+                // Go back to image step, keeping all data preserved
+                setStep('image');
+            } else {
+                // Go back to form step, keeping data preserved
+                setStep('form');
+            }
+        }
+    }, [step, mode]);
 
     const progressSteps = mode === 'ai_image'
         ? [
@@ -307,10 +319,12 @@ export default function ArticlePage() {
                 className="mb-8"
             >
                 <div className="flex items-center gap-4 mb-4">
-                    {step !== 'mode' && step !== 'preview' && step !== 'generating' && (
+                    {(step !== 'mode' && step !== 'generating') && (
                         <button
+                            type="button"
                             onClick={handleBack}
                             className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                            title={step === 'preview' ? (mode === 'ai_image' ? 'Quay lại sửa ảnh' : 'Quay lại sửa bài viết') : 'Quay lại'}
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -326,7 +340,7 @@ export default function ArticlePage() {
                             {step === 'form' && 'Nhập thông tin bài viết'}
                             {step === 'image' && 'Thiết lập ảnh AI nhiều góc cho bài viết'}
                             {step === 'generating' && 'Đang tạo bài viết...'}
-                            {step === 'preview' && 'Xem trước bài viết'}
+                            {step === 'preview' && 'Xem trước bài viết — bấm ← để quay lại sửa'}
                         </p>
                     </div>
                 </div>
@@ -450,13 +464,24 @@ export default function ArticlePage() {
                                 Xem trước và đăng lên Facebook ngay
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                {mode === 'ai_image' && (
+                                    <button
+                                        type="button"
+                                        onClick={handleBack}
+                                        className="px-6 py-3 rounded-xl border border-amber-300 text-amber-700 font-medium hover:bg-amber-50 transition-colors"
+                                    >
+                                        ← Quay lại sửa ảnh
+                                    </button>
+                                )}
                                 <button
+                                    type="button"
                                     onClick={handleReset}
                                     className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                                 >
                                     Tạo bài mới
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={handleOpenModal}
                                     className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-medium hover:shadow-lg transition-all"
                                 >
