@@ -12,13 +12,14 @@ interface ImageResultProps {
     originalImageUrl: string;
     selectedAngles: string[];
     onReset: () => void;
-    onRegenerate: () => void;
+    onRegenerate: (regenerateInstruction?: string) => void;
     isRegenerating?: boolean;
 }
 
 export default function ImageResult({ result, originalImageUrl, selectedAngles, onReset, onRegenerate, isRegenerating }: ImageResultProps) {
     const [viewMode, setViewMode] = useState<'compare' | 'full'>('compare');
     const [activeAngle, setActiveAngle] = useState<string>(selectedAngles[0] || 'wide');
+    const [regenerateInstruction, setRegenerateInstruction] = useState(result.regenerateInstruction || '');
 
     const normalizedGeneratedImages = result.generatedImages && result.generatedImages.length > 0
         ? result.generatedImages
@@ -283,9 +284,27 @@ export default function ImageResult({ result, originalImageUrl, selectedAngles, 
             )}
 
             {/* Actions */}
-            <div className="flex justify-center gap-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Feedback để tạo lại ảnh
+                    </label>
+                    <textarea
+                        value={regenerateInstruction}
+                        onChange={(e) => setRegenerateInstruction(e.target.value)}
+                        placeholder="Ví dụ: bỏ toàn bộ chữ trên ảnh, giữ đúng font/logo thật, đổi background sáng hơn, món ăn nhìn chân thực hơn..."
+                        rows={4}
+                        disabled={isRegenerating}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#F59E0B] focus:border-transparent resize-none transition-all"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                        Mô tả càng cụ thể, lần tạo lại càng khác biệt và sát ý hơn. Feedback này sẽ được cộng thêm vào prompt hiện tại.
+                    </p>
+                </div>
+
+                <div className="flex justify-center gap-4">
                 <Button
-                    onClick={onRegenerate}
+                    onClick={() => onRegenerate(regenerateInstruction.trim())}
                     variant="secondary"
                     size="lg"
                     disabled={isRegenerating}
@@ -310,6 +329,7 @@ export default function ImageResult({ result, originalImageUrl, selectedAngles, 
                     </svg>
                     Tạo ảnh mới
                 </Button>
+                </div>
             </div>
         </motion.div>
     );

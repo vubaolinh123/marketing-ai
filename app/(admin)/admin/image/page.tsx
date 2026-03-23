@@ -21,6 +21,28 @@ const steps = [
     { id: 'result', label: 'Kết quả' },
 ];
 
+const extractErrorMessage = (err: unknown, fallback: string) => {
+    if (!err || typeof err !== 'object') {
+        return fallback;
+    }
+
+    const candidate = err as {
+        message?: string;
+        statusCode?: number;
+        response?: { data?: { message?: string } };
+    };
+
+    if (candidate.response?.data?.message) {
+        return candidate.response.data.message;
+    }
+
+    if (candidate.message) {
+        return candidate.statusCode ? `${candidate.message} (Mã lỗi: ${candidate.statusCode})` : candidate.message;
+    }
+
+    return fallback;
+};
+
 export default function AIImagePage() {
     const [currentStep, setCurrentStep] = useState<Step>('form');
     const [formData, setFormData] = useState<ImageGenerationInput>(defaultImageInput);
@@ -30,28 +52,6 @@ export default function AIImagePage() {
     const [error, setError] = useState<string | null>(null);
 
     const selectedAngles = formData.cameraAngles?.length > 0 ? formData.cameraAngles : ['wide'];
-
-    const extractErrorMessage = (err: unknown, fallback: string) => {
-        if (!err || typeof err !== 'object') {
-            return fallback;
-        }
-
-        const candidate = err as {
-            message?: string;
-            statusCode?: number;
-            response?: { data?: { message?: string } };
-        };
-
-        if (candidate.response?.data?.message) {
-            return candidate.response.data.message;
-        }
-
-        if (candidate.message) {
-            return candidate.statusCode ? `${candidate.message} (Mã lỗi: ${candidate.statusCode})` : candidate.message;
-        }
-
-        return fallback;
-    };
 
     const handleSubmit = useCallback(async () => {
         if (formData.images.length === 0) {
@@ -130,7 +130,7 @@ export default function AIImagePage() {
         setCurrentStep('form');
     }, []);
 
-    const handleRegenerate = useCallback(async () => {
+    const handleRegenerate = useCallback(async (regenerateInstruction?: string) => {
         if (!generatedResult?._id) {
             setError('Không tìm thấy ảnh để tạo lại');
             return;
@@ -141,7 +141,9 @@ export default function AIImagePage() {
         setCurrentStep('processing');
 
         try {
-            const response = await productImageApi.regenerate(generatedResult._id);
+            const response = await productImageApi.regenerate(generatedResult._id, {
+                regenerateInstruction,
+            });
 
             if (response.success && response.data) {
                 setGeneratedResult(response.data);
@@ -181,13 +183,16 @@ export default function AIImagePage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3"
+                    title="Thông báo lỗi tạo ảnh"
                 >
                     <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>{error}</span>
                     <button
+                        type="button"
                         onClick={() => setError(null)}
+                        title="Đóng thông báo lỗi"
                         className="ml-auto text-red-500 hover:text-red-700"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -206,13 +211,15 @@ export default function AIImagePage() {
                 <div className="flex items-center justify-center">
                     {steps.map((step, index) => (
                         <div key={step.id} className="flex items-center">
-                            <div className="flex flex-col items-center">
+                            <div className="flex flex-col items-center" title={step.label}>
                                 <div className={cn(
                                     'w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all',
                                     index <= stepIndex
                                         ? 'bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white shadow-lg'
                                         : 'bg-gray-200 text-gray-500'
-                                )}>
+                                )}
+                                title={`Bước ${index + 1}: ${step.label}`}
+                                >
                                     {index < stepIndex ? (
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

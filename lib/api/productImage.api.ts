@@ -45,6 +45,7 @@ export interface ProductImage {
     logoPosition: string;
     outputSize: string;
     additionalNotes: string;
+    regenerateInstruction?: string;
     usedBrandSettings: boolean;
     status: 'processing' | 'completed' | 'failed';
     errorMessage?: string;
@@ -98,8 +99,8 @@ export const productImageApi = {
     /**
      * Regenerate an existing product image (same input, new result)
      */
-    regenerate: async (id: string): Promise<ProductImageResponse> => {
-        const response = await api.post(`/product-images/${id}/regenerate`, undefined, {
+    regenerate: async (id: string, payload?: { regenerateInstruction?: string }): Promise<ProductImageResponse> => {
+        const response = await api.post(`/product-images/${id}/regenerate`, payload, {
             timeout: 300000, // 5 minutes
         });
         return response.data;
