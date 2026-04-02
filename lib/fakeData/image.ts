@@ -45,6 +45,7 @@ export const outputSizeOptions = [
 
 export interface ImageGenerationInput {
     images: File[];
+    multiReferenceMode: boolean;
     cameraAngles: string[];
     backgroundType: string;
     customBackground: string;
@@ -166,6 +167,7 @@ export const fakeGeneratedImages: GeneratedImage[] = [
 
 export const defaultImageInput: ImageGenerationInput = {
     images: [],
+    multiReferenceMode: false,
     cameraAngles: defaultCameraAngles,
     backgroundType: 'studio',
     customBackground: '',

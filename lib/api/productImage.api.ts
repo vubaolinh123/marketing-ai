@@ -7,6 +7,8 @@ import api from './api';
 
 export interface ProductImageInput {
     originalImageUrl: string;
+    referenceImageUrls?: string[];
+    multiReferenceMode?: boolean;
     backgroundType: string;
     cameraAngles?: string[];
     customBackground?: string;
@@ -37,6 +39,8 @@ export interface ProductImage {
     userId: string;
     title: string;
     originalImageUrl: string;
+    multiReferenceMode?: boolean;
+    referenceImageUrls?: string[];
     generatedImageUrl: string;
     cameraAngles?: string[];
     backgroundType: string;

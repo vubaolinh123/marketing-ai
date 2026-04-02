@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ImageGenerationInput, defaultImageInput, getCameraAngleLabel, normalizeAdIntensityValue } from '@/lib/fakeData/image';
 import { productImageApi, ProductImage } from '@/lib/api';
-import { uploadImage, getImageUrl } from '@/lib/api/upload.api';
+import { uploadImage, uploadImages, getImageUrl } from '@/lib/api/upload.api';
 
 // Dynamic imports
 const ImageUploadForm = dynamic(() => import('./_components/ImageUploadForm'), { ssr: false });
@@ -59,8 +59,10 @@ export default function AIImagePage() {
             return;
         }
 
-        if (formData.images[0].size > 10 * 1024 * 1024) {
-            setError('Ảnh vượt quá 10MB. Vui lòng chọn file nhỏ hơn 10MB.');
+        // Validate file sizes
+        const oversizedFile = formData.images.find(f => f.size > 10 * 1024 * 1024);
+        if (oversizedFile) {
+            setError(`Ảnh "${oversizedFile.name}" vượt quá 10MB. Vui lòng chọn file nhỏ hơn 10MB.`);
             return;
         }
 
@@ -79,16 +81,31 @@ export default function AIImagePage() {
         setCurrentStep('processing');
 
         try {
-            // Step 1: Upload the image first
-            const uploadedFile = await uploadImage(formData.images[0], 'ai-images');
-            const imageUrl = uploadedFile.url;
-            setOriginalImageUrl(getImageUrl(imageUrl));
+            const isMultiRef = formData.multiReferenceMode && formData.images.length > 1;
 
-            // Step 2: Generate AI image
+            let primaryImageUrl: string;
+            let referenceImageUrls: string[] = [];
+
+            if (isMultiRef) {
+                // Multi-reference mode: upload all images
+                const uploadResult = await uploadImages(formData.images, 'ai-images');
+                primaryImageUrl = uploadResult.files[0].url;
+                referenceImageUrls = uploadResult.files.slice(1).map(f => f.url);
+                setOriginalImageUrl(getImageUrl(primaryImageUrl));
+            } else {
+                // Single image mode
+                const uploadedFile = await uploadImage(formData.images[0], 'ai-images');
+                primaryImageUrl = uploadedFile.url;
+                setOriginalImageUrl(getImageUrl(primaryImageUrl));
+            }
+
+            // Generate AI image
             const normalizedAdIntensity = normalizeAdIntensityValue(formData.adIntensity);
 
             const response = await productImageApi.generate({
-                originalImageUrl: imageUrl,
+                originalImageUrl: primaryImageUrl,
+                multiReferenceMode: isMultiRef,
+                referenceImageUrls: isMultiRef ? referenceImageUrls : undefined,
                 backgroundType: formData.backgroundType,
                 cameraAngles: selectedAngles,
                 customBackground: formData.customBackground,
@@ -259,6 +276,21 @@ export default function AIImagePage() {
 
             {currentStep === 'processing' && (
                 <ImageProcessing imageCount={selectedAngles.length} />
+            )}
+
+            {currentStep === 'processing' && formData.multiReferenceMode && formData.images.length > 1 && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-4 bg-purple-50 rounded-2xl border border-purple-200 p-4"
+                >
+                    <p className="text-sm text-purple-700 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="font-medium">Chế độ multi-reference: AI đang phân tích {formData.images.length} ảnh sản phẩm để tạo ảnh chính xác nhất</span>
+                    </p>
+                </motion.div>
             )}
 
             {currentStep === 'result' && generatedResult && (
