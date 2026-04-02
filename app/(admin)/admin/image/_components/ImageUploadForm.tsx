@@ -174,7 +174,7 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
                             </div>
                             <div>
                                 <p className="font-semibold text-gray-900 text-sm">Upload nhiều ảnh sản phẩm</p>
-                                <p className="text-xs text-gray-500">Upload tối đa 5 ảnh từ nhiều góc để AI hiểu rõ sản phẩm hơn</p>
+                                <p className="text-xs text-gray-500">Upload tối đa 5 ảnh khác nhau (bối cảnh, sản phẩm, đạo cụ) để AI ghép thành 1 ảnh</p>
                             </div>
                         </div>
                         <button
@@ -213,9 +213,9 @@ export default function ImageUploadForm({ data, onChange, onSubmit, isLoading }:
                                 </svg>
                                 <div>
                                     <p className="font-medium">Upload nhiều ảnh có thể làm giảm chất lượng đầu ra ảnh so với sản phẩm gốc</p>
-                                    <p className="mt-1 text-xs text-amber-700">
-                                        Để có kết quả tốt nhất, hãy upload ảnh từ nhiều góc khác nhau (trước, sau, bên, trên) với chất lượng cao và ánh sáng đồng đều.
-                                        Ảnh đầu tiên sẽ được dùng làm ảnh chính (primary reference).
+                                     <p className="mt-1 text-xs text-amber-700">
+                                        VD: Ảnh 1 = nhà hàng/bối cảnh, Ảnh 2 = sản phẩm (miếng thịt). AI sẽ đặt sản phẩm vào bối cảnh với ánh sáng và góc nhìn phù hợp.
+                                        Ảnh đầu tiên được ưu tiên làm bối cảnh chính.
                                     </p>
                                 </div>
                             </div>
